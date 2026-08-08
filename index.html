@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0D1311">
-<title>JAI Conclave 2026 — Check-in Scanner</title>
+<meta name="theme-color" content="#121815">
+<title>JAI Conclave 2026 — Scanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=1.0.6">
+<link rel="stylesheet" href="css/style.css?v=1.0.7">
 </head>
 <body>
 
@@ -21,130 +21,97 @@
     <span id="volunteerName" class="volunteer-tag">—</span>
     <div class="status-cp-row">
       <span id="checkpointName" class="checkpoint-tag">—</span>
-      <button id="changeCpBtn" class="pill-btn switch-btn" type="button">Switch</button>
+      <button id="changeCpBtn" class="chip-btn" type="button">Switch</button>
     </div>
   </div>
   <div class="status-right">
-    <span id="pendingBadge" class="pending-chip hidden">0</span>
-    <div class="network-indicator" title="Network status">
-      <span id="connDot" class="conn-dot online"></span>
-    </div>
-    <button id="logoutBtn" class="pill-btn logout-btn" type="button">Logout</button>
+    <span id="pendingBadge" class="pending-badge hidden">0</span>
+    <span id="connDot" class="conn-dot online" title="Online"></span>
+    <button id="logoutBtn" class="link-btn" type="button">Logout</button>
   </div>
 </header>
 
 <main id="app">
 
-  <!-- CHIC LOGIN VIEW -->
+  <!-- LOGIN VIEW -->
   <section id="view-login" class="view">
-    <div class="login-wrapper">
-      <div class="brand-chip">
-        <span class="chip-dot"></span>
-        <span>JAI CONCLAVE 2026</span>
-      </div>
-      
-      <h1 class="login-title">Event Scanner</h1>
-      <p class="login-sub">Welcome back. Enter your volunteer credentials to begin checking in attendees.</p>
+    <div class="login-card">
+      <div class="brand-tag">JAI CONCLAVE 2026</div>
+      <h1 class="brand-title">Volunteer Login</h1>
+      <p class="brand-sub">Scan participant badges & verify check-ins</p>
 
-      <form id="loginForm" class="login-card" autocomplete="off">
-        <div class="input-field">
-          <label class="input-label" for="volunteerId">Volunteer ID</label>
-          <div class="input-box">
-            <span class="input-icon">👤</span>
-            <input id="volunteerId" name="volunteerId" type="text" inputmode="text"
-                   placeholder="VOL-01" autocomplete="off" value="VOL-01" required>
-          </div>
+      <form id="loginForm" autocomplete="off">
+        <div class="field-group">
+          <label class="field-label" for="volunteerId">Volunteer ID</label>
+          <input id="volunteerId" name="volunteerId" type="text" inputmode="text"
+                 placeholder="VOL-01" autocomplete="off" value="VOL-01" required>
         </div>
 
-        <div class="input-field">
-          <label class="input-label" for="pin">Security PIN</label>
-          <div class="input-box">
-            <span class="input-icon">🔒</span>
-            <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*"
-                   maxlength="4" placeholder="••••" autocomplete="off" value="1234" required>
-          </div>
+        <div class="field-group">
+          <label class="field-label" for="pin">PIN</label>
+          <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*"
+                 maxlength="4" placeholder="••••" autocomplete="off" value="1234" required>
         </div>
 
-        <button type="submit" id="loginBtn" class="btn-action">
-          <span>Sign In & Continue</span>
-          <span class="btn-arrow">→</span>
-        </button>
+        <button type="submit" id="loginBtn" class="btn-primary">Sign In & Scan</button>
 
-        <div id="loginErrorBox" class="error-notice hidden">
-          <p id="loginError" class="error-msg"></p>
-          <button type="button" id="resetCacheBtn" class="sub-link-btn">Clear Storage & Refresh</button>
+        <div id="loginErrorBox" class="error-box hidden">
+          <p id="loginError" class="error-text"></p>
+          <button type="button" id="resetCacheBtn" class="btn-reset">Clear Cache & Refresh</button>
         </div>
       </form>
-
-      <p class="login-footer">Offline-first • Automatic background sync</p>
     </div>
   </section>
 
   <!-- CHECKPOINT SELECT VIEW -->
   <section id="view-checkpoint" class="view hidden">
-    <div class="view-container">
-      <div class="section-header">
-        <h2 class="view-title">Active Station</h2>
-        <p class="view-subtitle">Select the station or hall you are currently managing:</p>
-      </div>
-      <div id="checkpointList" class="checkpoint-grid"></div>
+    <div class="view-inner">
+      <h2 class="view-heading">Select Checkpoint</h2>
+      <p class="view-desc">Tap where you are scanning right now:</p>
+      <div id="checkpointList" class="checkpoint-list"></div>
     </div>
   </section>
 
-  <!-- SCANNER VIEW -->
+  <!-- CLEAN SCANNER VIEW -->
   <section id="view-scanner" class="view hidden">
-    <div class="scanner-container">
-      <div id="qr-reader"></div>
-      <div class="scanner-frame">
-        <div class="scanner-corners">
-          <span class="corner top-left"></span>
-          <span class="corner top-right"></span>
-          <span class="corner bottom-left"></span>
-          <span class="corner bottom-right"></span>
-        </div>
-        <div class="laser-line"></div>
-      </div>
-      <p class="scan-prompt">Align attendee badge QR inside the frame</p>
-      <button id="manualEntryBtn" class="manual-trigger-btn" type="button">
-        <span>⌨️</span>
-        <span>Enter ID Manually</span>
-      </button>
+    <div id="qr-reader"></div>
+    <div class="scanner-bottom-bar">
+      <p class="scan-hint">Point camera at QR code</p>
+      <button id="manualEntryBtn" class="btn-manual" type="button">Enter ID Manually</button>
     </div>
   </section>
 
-  <!-- RESULT OVERLAY (Instant feedback) -->
+  <!-- RESULT OVERLAY -->
   <section id="resultOverlay" class="result-overlay hidden">
-    <div class="result-sheet">
-      <div id="resultIcon" class="result-badge-icon"></div>
-      <h2 id="resultTitle" class="result-heading"></h2>
-      <p id="resultName" class="result-attendee-name"></p>
-      <p id="resultId" class="result-attendee-id"></p>
+    <div class="result-card">
+      <div id="resultIcon" class="result-icon"></div>
+      <h2 id="resultTitle" class="result-title"></h2>
+      <p id="resultName" class="result-name"></p>
+      <p id="resultId" class="result-id"></p>
       
-      <div class="result-info-grid">
-        <div class="info-card">
-          <span class="info-label">Checkpoint</span>
-          <span id="resultCheckpoint" class="info-value"></span>
+      <div class="result-meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Checkpoint</span>
+          <span id="resultCheckpoint" class="meta-value"></span>
         </div>
-        <div class="info-card">
-          <span class="info-label" id="resultTimeLabel">Recorded Time</span>
-          <span id="resultTime" class="info-value"></span>
+        <div class="meta-item">
+          <span class="meta-label" id="resultTimeLabel">Time</span>
+          <span id="resultTime" class="meta-value"></span>
         </div>
       </div>
 
-      <button id="scanNextBtn" class="btn-action result-action-btn" type="button">Ready for Next Attendee</button>
+      <button id="scanNextBtn" class="btn-primary result-next-btn" type="button">Ready for Next Scan</button>
     </div>
   </section>
 
   <!-- MANUAL ENTRY MODAL -->
-  <section id="manualEntryModal" class="modal-overlay hidden">
-    <div class="modal-sheet">
-      <div class="modal-handle"></div>
-      <h3 class="modal-title">Manual Badge Entry</h3>
-      <p class="modal-sub">Type the unique participant ID printed on the badge:</p>
-      <input id="manualIdInput" class="modal-input" type="text" placeholder="e.g. JAI-26-000001" autocomplete="off">
-      <div class="modal-buttons">
-        <button id="manualCancelBtn" class="btn-ghost" type="button">Cancel</button>
-        <button id="manualSubmitBtn" class="btn-action modal-submit" type="button">Verify & Check In</button>
+  <section id="manualEntryModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <h3 class="modal-title">Manual Badge Check-in</h3>
+      <input id="manualIdInput" class="modal-input" type="text" placeholder="JAI-26-000001" autocomplete="off">
+      <div class="modal-actions">
+        <button id="manualCancelBtn" class="btn-secondary" type="button">Cancel</button>
+        <button id="manualSubmitBtn" class="btn-primary" type="button">Submit</button>
       </div>
     </div>
   </section>
@@ -153,33 +120,17 @@
 
 <!-- Scripts -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="js/config.js?v=1.0.6"></script>
-<script src="js/offlineQueue.js?v=1.0.6"></script>
-<script src="js/api.js?v=1.0.6"></script>
-<script src="js/auth.js?v=1.0.6"></script>
-<script src="js/scanner.js?v=1.0.6"></script>
-<script src="js/ui.js?v=1.0.6"></script>
+<script src="js/config.js?v=1.0.7"></script>
+<script src="js/offlineQueue.js?v=1.0.7"></script>
+<script src="js/api.js?v=1.0.7"></script>
+<script src="js/auth.js?v=1.0.7"></script>
+<script src="js/scanner.js?v=1.0.7"></script>
+<script src="js/ui.js?v=1.0.7"></script>
 <script>
-  // Bootstrap the app and maintain real-time service worker freshness
   document.addEventListener('DOMContentLoaded', () => {
     UI.init();
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js?v=1.0.6').then(reg => {
-        reg.onupdatefound = () => {
-          const worker = reg.installing;
-          if (worker) {
-            worker.onstatechange = () => {
-              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-                window.location.reload();
-              }
-            };
-          }
-        };
-      }).catch(err => {
-        console.warn('Service worker registration failed:', err);
-      });
-      
-      // Auto-check for updates whenever user tabs back into the app
+      navigator.serviceWorker.register('service-worker.js?v=1.0.7').catch(() => {});
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           navigator.serviceWorker.ready.then(r => r.update()).catch(() => {});

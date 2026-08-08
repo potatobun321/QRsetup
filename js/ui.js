@@ -140,14 +140,14 @@ const UI = (() => {
       btn.className = "checkpoint-btn";
       const icon = cp.id === "ENT" ? "🚪" : (cp.id === "BAD" ? "🎫" : (cp.id.indexOf("CAF") !== -1 || cp.id.indexOf("LUNCH") !== -1 ? "🍱" : (cp.id === "COU" ? "🏛️" : "📍")));
       btn.innerHTML = `
-        <div class="cp-btn-left">
-          <div class="cp-icon-bubble">${icon}</div>
-          <div class="cp-text-wrap">
-            <span class="cp-title">${cp.name}</span>
-            <span class="cp-tag ${cp.duplicateAllowed ? 'cp-tag-multi' : 'cp-tag-single'}">${cp.duplicateAllowed ? 'Multi-scan' : 'Single entry'}</span>
+        <div class="cp-left">
+          <span class="cp-icon">${icon}</span>
+          <div class="cp-info">
+            <span class="cp-name">${cp.name}</span>
+            <span class="cp-tag ${cp.duplicateAllowed ? 'cp-multi' : 'cp-single'}">${cp.duplicateAllowed ? 'Multi-scan' : 'Single entry'}</span>
           </div>
         </div>
-        <span class="cp-chevron">›</span>
+        <span class="cp-arrow">›</span>
       `;
       btn.disabled = cp.active === false;
       if (!btn.disabled) {
