@@ -16,7 +16,10 @@
 <header id="statusBar" class="status-bar hidden">
   <div class="status-left">
     <span id="volunteerName" class="status-name">—</span>
-    <span id="checkpointName" class="status-checkpoint">—</span>
+    <div class="status-cp-row">
+      <span id="checkpointName" class="status-checkpoint">—</span>
+      <button id="changeCpBtn" class="switch-cp-btn" title="Switch checkpoint">Switch</button>
+    </div>
   </div>
   <div class="status-right">
     <span id="pendingBadge" class="pending-badge hidden">0</span>
@@ -31,8 +34,8 @@
   <section id="view-login" class="view">
     <div class="login-card">
       <div class="brand-badge">JAI CONCLAVE 2026</div>
-      <h1 class="brand">Volunteer Login</h1>
-      <p class="brand-sub">Scan participant badges & verify check-ins</p>
+      <h1 class="brand">Volunteer Scanner</h1>
+      <p class="brand-sub">Live Badge Check-In & Entry Verification</p>
 
       <form id="loginForm" autocomplete="off">
         <div class="input-group">
@@ -47,7 +50,7 @@
                  maxlength="4" placeholder="••••" autocomplete="off" value="1234" required>
         </div>
 
-        <button type="submit" id="loginBtn" class="btn-primary">Log In & Start</button>
+        <button type="submit" id="loginBtn" class="btn-primary">Sign In & Scan</button>
 
         <div id="loginErrorBox" class="error-box hidden">
           <p id="loginError" class="error-text"></p>
@@ -60,7 +63,8 @@
   <!-- CHECKPOINT SELECT VIEW -->
   <section id="view-checkpoint" class="view hidden">
     <div class="view-inner">
-      <h2 class="view-title">Select your checkpoint</h2>
+      <h2 class="view-title">Select Checkpoint</h2>
+      <p class="view-subtitle">Tap where you are scanning right now:</p>
       <div id="checkpointList" class="checkpoint-list"></div>
     </div>
   </section>
@@ -68,7 +72,7 @@
   <!-- SCANNER VIEW -->
   <section id="view-scanner" class="view hidden">
     <div id="qr-reader"></div>
-    <p class="scan-hint">Point camera at participant QR code</p>
+    <p class="scan-hint">Point camera at participant QR badge</p>
     <button id="manualEntryBtn" class="link-btn manual-entry-btn">Enter ID manually</button>
   </section>
 
@@ -105,20 +109,20 @@
 
 </main>
 
-<!-- Scripts with cache-busting query strings -->
+<!-- Scripts with cache-busting version query strings -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="js/config.js?v=1.0.4"></script>
-<script src="js/offlineQueue.js?v=1.0.4"></script>
-<script src="js/api.js?v=1.0.4"></script>
-<script src="js/auth.js?v=1.0.4"></script>
-<script src="js/scanner.js?v=1.0.4"></script>
-<script src="js/ui.js?v=1.0.4"></script>
+<script src="js/config.js?v=1.0.5"></script>
+<script src="js/offlineQueue.js?v=1.0.5"></script>
+<script src="js/api.js?v=1.0.5"></script>
+<script src="js/auth.js?v=1.0.5"></script>
+<script src="js/scanner.js?v=1.0.5"></script>
+<script src="js/ui.js?v=1.0.5"></script>
 <script>
   // Bootstrap the app once all modules are loaded.
   document.addEventListener('DOMContentLoaded', () => {
     UI.init();
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js?v=1.0.4').catch(err => {
+      navigator.serviceWorker.register('service-worker.js?v=1.0.5').catch(err => {
         console.warn('Service worker registration failed:', err);
       });
     }

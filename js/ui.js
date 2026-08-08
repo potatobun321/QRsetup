@@ -19,6 +19,7 @@ const UI = (() => {
       pendingBadge: document.getElementById("pendingBadge"),
       connDot: document.getElementById("connDot"),
       logoutBtn: document.getElementById("logoutBtn"),
+      changeCpBtn: document.getElementById("changeCpBtn"),
 
       viewLogin: document.getElementById("view-login"),
       loginForm: document.getElementById("loginForm"),
@@ -107,7 +108,7 @@ const UI = (() => {
 
   function setLoginLoading(loading) {
     els.loginBtn.disabled = loading;
-    els.loginBtn.textContent = loading ? "Authenticating…" : "Log In & Start";
+    els.loginBtn.textContent = loading ? "Authenticating…" : "Sign In & Scan";
   }
 
   function showLoginError(msg) {
@@ -137,7 +138,17 @@ const UI = (() => {
     (checkpoints || []).forEach((cp) => {
       const btn = document.createElement("button");
       btn.className = "checkpoint-btn";
-      btn.textContent = cp.name;
+      const icon = cp.id === "ENT" ? "🚪" : (cp.id === "BAD" ? "🎫" : (cp.id.indexOf("CAF") !== -1 || cp.id.indexOf("LUNCH") !== -1 ? "🍱" : (cp.id === "COU" ? "🏛️" : "📍")));
+      btn.innerHTML = `
+        <span class="cp-btn-left">
+          <span class="cp-icon">${icon}</span>
+          <span class="cp-text">
+            <span class="cp-name">${cp.name}</span>
+            <span class="cp-badge ${cp.duplicateAllowed ? 'cp-multi' : 'cp-single'}">${cp.duplicateAllowed ? 'Multi-scan' : 'Single entry'}</span>
+          </span>
+        </span>
+        <span class="cp-arrow">›</span>
+      `;
       btn.disabled = cp.active === false;
       if (!btn.disabled) {
         btn.addEventListener("click", () => {
@@ -148,6 +159,17 @@ const UI = (() => {
       }
       els.checkpointList.appendChild(btn);
     });
+  }
+
+  function wireCheckpointSwitch() {
+    if (els.changeCpBtn) {
+      els.changeCpBtn.addEventListener("click", async () => {
+        await Scanner.stop();
+        const session = Auth.getSession();
+        renderCheckpoints(session ? session.checkpoints : []);
+        showView("viewCheckpoint");
+      });
+    }
   }
 
   /* ---------------- Scanner ---------------- */
@@ -446,6 +468,7 @@ const UI = (() => {
   function init() {
     cacheEls();
     wireLogin();
+    wireCheckpointSwitch();
     wireManualEntry();
     wireResultDismiss();
     wireLogout();
