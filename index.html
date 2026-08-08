@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=1.0.4">
 </head>
 <body>
 
@@ -27,23 +27,32 @@
 
 <main id="app">
 
-  <!-- LOGIN VIEW -->
+  <!-- SIMPLIFIED LOGIN VIEW -->
   <section id="view-login" class="view">
     <div class="login-card">
-      <h1 class="brand">JAI Conclave <span>2026</span></h1>
-      <p class="brand-sub">Volunteer Check-in Scanner</p>
+      <div class="brand-badge">JAI CONCLAVE 2026</div>
+      <h1 class="brand">Volunteer Login</h1>
+      <p class="brand-sub">Scan participant badges & verify check-ins</p>
 
       <form id="loginForm" autocomplete="off">
-        <label class="field-label" for="volunteerId">Volunteer ID</label>
-        <input id="volunteerId" name="volunteerId" type="text" inputmode="text"
-               placeholder="e.g. VOL-01" autocomplete="off" required>
+        <div class="input-group">
+          <label class="field-label" for="volunteerId">Volunteer ID</label>
+          <input id="volunteerId" name="volunteerId" type="text" inputmode="text"
+                 placeholder="VOL-01" autocomplete="off" value="VOL-01" required>
+        </div>
 
-        <label class="field-label" for="pin">4-digit PIN</label>
-        <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*"
-               maxlength="4" placeholder="••••" autocomplete="off" required>
+        <div class="input-group">
+          <label class="field-label" for="pin">4-Digit PIN</label>
+          <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*"
+                 maxlength="4" placeholder="••••" autocomplete="off" value="1234" required>
+        </div>
 
-        <button type="submit" id="loginBtn" class="btn-primary">Log In</button>
-        <p id="loginError" class="error-text hidden"></p>
+        <button type="submit" id="loginBtn" class="btn-primary">Log In & Start</button>
+
+        <div id="loginErrorBox" class="error-box hidden">
+          <p id="loginError" class="error-text"></p>
+          <button type="button" id="resetCacheBtn" class="reset-cache-link">Clear Cache & Refresh App</button>
+        </div>
       </form>
     </div>
   </section>
@@ -59,7 +68,7 @@
   <!-- SCANNER VIEW -->
   <section id="view-scanner" class="view hidden">
     <div id="qr-reader"></div>
-    <p class="scan-hint">Point the camera at a participant's QR code</p>
+    <p class="scan-hint">Point camera at participant QR code</p>
     <button id="manualEntryBtn" class="link-btn manual-entry-btn">Enter ID manually</button>
   </section>
 
@@ -96,20 +105,20 @@
 
 </main>
 
-<!-- Scripts: order matters, no bundler -->
+<!-- Scripts with cache-busting query strings -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/offlineQueue.js"></script>
-<script src="js/api.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/scanner.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/config.js?v=1.0.4"></script>
+<script src="js/offlineQueue.js?v=1.0.4"></script>
+<script src="js/api.js?v=1.0.4"></script>
+<script src="js/auth.js?v=1.0.4"></script>
+<script src="js/scanner.js?v=1.0.4"></script>
+<script src="js/ui.js?v=1.0.4"></script>
 <script>
   // Bootstrap the app once all modules are loaded.
   document.addEventListener('DOMContentLoaded', () => {
     UI.init();
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').catch(err => {
+      navigator.serviceWorker.register('service-worker.js?v=1.0.4').catch(err => {
         console.warn('Service worker registration failed:', err);
       });
     }

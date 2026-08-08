@@ -122,51 +122,74 @@ button, input {
 #view-login {
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 20px;
   background:
-    radial-gradient(120% 60% at 50% -10%, rgba(67,217,158,0.14), transparent 60%),
+    radial-gradient(100% 50% at 50% 0%, rgba(67,217,158,0.12), transparent 70%),
     var(--bg);
 }
 
 .login-card {
   width: 100%;
   max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 30px 24px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+.brand-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  background: rgba(67,217,158,0.12);
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
 }
 
 .brand {
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  margin: 0 0 2px;
+  margin: 0 0 4px;
 }
 .brand span { color: var(--accent); }
 .brand-sub {
   color: var(--text-dim);
-  font-size: 14px;
-  margin: 0 0 28px;
+  font-size: 13px;
+  margin: 0 0 24px;
   font-weight: 500;
+}
+
+.input-group {
+  margin-bottom: 16px;
 }
 
 .field-label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-dim);
-  margin: 16px 0 6px;
+  margin-bottom: 6px;
 }
 
 input[type="text"],
 input[type="password"] {
   width: 100%;
-  background: var(--surface);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
-  font-size: 18px;
-  padding: 14px 16px;
+  font-size: 17px;
+  font-weight: 600;
+  padding: 13px 16px;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 input[type="text"]:focus,
 input[type="password"]:focus {
@@ -174,44 +197,56 @@ input[type="password"]:focus {
   box-shadow: 0 0 0 3px rgba(67,217,158,0.18);
 }
 #pin {
-  letter-spacing: 0.5em;
+  letter-spacing: 0.4em;
   text-align: center;
   font-weight: 700;
 }
 
 .btn-primary {
   width: 100%;
-  margin-top: 22px;
-  padding: 16px;
+  margin-top: 10px;
+  padding: 15px;
   border: none;
   border-radius: var(--radius-sm);
   background: var(--accent);
   color: #06170F;
   font-size: 16px;
   font-weight: 800;
-  min-height: 52px;
+  min-height: 50px;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
 }
-.btn-primary:active { background: var(--accent-dim); }
+.btn-primary:active { transform: scale(0.98); background: var(--accent-dim); }
 .btn-primary:disabled { opacity: 0.5; }
 
-.btn-secondary {
-  flex: 1;
-  padding: 14px;
-  border: 1px solid var(--border);
+.error-box {
+  margin-top: 18px;
+  padding: 12px;
+  background: rgba(230,83,60,0.1);
+  border: 1px solid rgba(230,83,60,0.3);
   border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 700;
-  min-height: 48px;
+  text-align: center;
 }
 
 .error-text {
   color: var(--red);
   font-size: 13px;
   font-weight: 600;
-  margin-top: 12px;
-  text-align: center;
+  margin: 0 0 8px;
+}
+
+.reset-cache-link {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.reset-cache-link:active {
+  background: rgba(255,255,255,0.1);
 }
 
 /* ---------------- Checkpoint list ---------------- */

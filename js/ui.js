@@ -26,6 +26,8 @@ const UI = (() => {
       pinInput: document.getElementById("pin"),
       loginBtn: document.getElementById("loginBtn"),
       loginError: document.getElementById("loginError"),
+      loginErrorBox: document.getElementById("loginErrorBox"),
+      resetCacheBtn: document.getElementById("resetCacheBtn"),
 
       viewCheckpoint: document.getElementById("view-checkpoint"),
       checkpointList: document.getElementById("checkpointList"),
@@ -66,30 +68,55 @@ const UI = (() => {
       if (!volunteerId || !pin) return;
 
       setLoginLoading(true);
+      if (els.loginErrorBox) els.loginErrorBox.classList.add("hidden");
+
       try {
         const res = await Auth.login(volunteerId, pin);
         if (res && res.success) {
-          els.loginError.classList.add("hidden");
+          if (els.loginErrorBox) els.loginErrorBox.classList.add("hidden");
           goToCheckpointOrScanner();
         } else {
           showLoginError((res && res.message) || "Login failed. Check ID and PIN.");
         }
       } catch (err) {
-        showLoginError("Can't reach the server. Check your connection and try again.");
+        showLoginError("Can't reach server. If you recently updated, tap 'Clear Cache & Refresh'.");
       } finally {
         setLoginLoading(false);
       }
     });
+
+    if (els.resetCacheBtn) {
+      els.resetCacheBtn.addEventListener("click", async () => {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let reg of registrations) {
+            await reg.unregister();
+          }
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          for (let k of keys) {
+            await caches.delete(k);
+          }
+        }
+        localStorage.clear();
+        window.location.reload(true);
+      });
+    }
   }
 
   function setLoginLoading(loading) {
     els.loginBtn.disabled = loading;
-    els.loginBtn.textContent = loading ? "Logging in…" : "Log In";
+    els.loginBtn.textContent = loading ? "Authenticating…" : "Log In & Start";
   }
 
   function showLoginError(msg) {
     els.loginError.textContent = msg;
-    els.loginError.classList.remove("hidden");
+    if (els.loginErrorBox) {
+      els.loginErrorBox.classList.remove("hidden");
+    } else {
+      els.loginError.classList.remove("hidden");
+    }
   }
 
   function goToCheckpointOrScanner() {
