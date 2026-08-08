@@ -9,11 +9,11 @@
 const Config = {
   // PASTE your deployed Google Apps Script Web App URL below.
   // It looks like: https://script.google.com/macros/s/AKfycb.../exec
-  API_URL: "PASTE_APPS_SCRIPT_WEB_APP_URL_HERE",
+  API_URL: "https://script.google.com/macros/s/AKfycbwekPEm51lOi_3ofVDNK6I0GAJsd-n1r-vUst5sBYyuPKYoRj8HtUgfPVvmPV0n4uOk/exec",
 
   // Bump this string on every deploy that changes cached files.
   // The service worker uses it to know when to refresh its cache.
-  APP_VERSION: "v1.0.0",
+  APP_VERSION: "v1.0.1",
 
   // How long a scan result stays on screen before auto-returning
   // to the scanner (milliseconds). 0 disables auto-dismiss.
