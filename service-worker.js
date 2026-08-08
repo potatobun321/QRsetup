@@ -32,11 +32,13 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(APP_SHELL).catch((err) => {
+        console.warn("Some assets failed to pre-cache:", err);
+      });
+    })
   );
 });
 
@@ -58,31 +60,40 @@ self.addEventListener("fetch", (event) => {
 
   // Never intercept/cache calls to the Apps Script API — always live.
   if (Config.API_URL && url.indexOf(Config.API_URL) === 0) {
-    return; // let the browser handle it normally
+    return;
   }
   if (url.indexOf("script.google.com") !== -1 || url.indexOf("script.googleusercontent.com") !== -1) {
     return;
   }
 
-  // Cache-first for the app shell; fall back to network, and cache
-  // successful same-origin GETs opportunistically as they're seen.
+  // Network-First with Cache Fallback for App Shell assets.
+  // This ensures online devices always get the latest GitHub code,
+  // while offline devices at the venue fall back seamlessly to cache.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          if (
-            response &&
-            response.ok &&
-            event.request.method === "GET" &&
-            response.type !== "opaque"
-          ) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          event.request.method === "GET"
+        ) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // Network failed (offline or venue drop) — use cached copy.
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (event.request.mode === "navigate") {
+            return caches.match("./index.html");
           }
-          return response;
-        })
-        .catch(() => cached);
-    })
+          return new Response("Offline", { status: 503, statusText: "Offline" });
+        });
+      })
   );
 });
+
