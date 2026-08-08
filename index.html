@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#111815">
+<title>JAI Conclave 2026 — Scanner</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Top status bar: visible on checkpoint + scanner views -->
+<header id="statusBar" class="status-bar hidden">
+  <div class="status-left">
+    <span id="volunteerName" class="status-name">—</span>
+    <span id="checkpointName" class="status-checkpoint">—</span>
+  </div>
+  <div class="status-right">
+    <span id="pendingBadge" class="pending-badge hidden">0</span>
+    <span id="connDot" class="conn-dot online" title="Online"></span>
+    <button id="logoutBtn" class="link-btn">Logout</button>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- LOGIN VIEW -->
+  <section id="view-login" class="view">
+    <div class="login-card">
+      <h1 class="brand">JAI Conclave <span>2026</span></h1>
+      <p class="brand-sub">Volunteer Check-in Scanner</p>
+
+      <form id="loginForm" autocomplete="off">
+        <label class="field-label" for="volunteerId">Volunteer ID</label>
+        <input id="volunteerId" name="volunteerId" type="text" inputmode="text"
+               placeholder="e.g. VOL-01" autocomplete="off" required>
+
+        <label class="field-label" for="pin">4-digit PIN</label>
+        <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*"
+               maxlength="4" placeholder="••••" autocomplete="off" required>
+
+        <button type="submit" id="loginBtn" class="btn-primary">Log In</button>
+        <p id="loginError" class="error-text hidden"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- CHECKPOINT SELECT VIEW -->
+  <section id="view-checkpoint" class="view hidden">
+    <div class="view-inner">
+      <h2 class="view-title">Select your checkpoint</h2>
+      <div id="checkpointList" class="checkpoint-list"></div>
+    </div>
+  </section>
+
+  <!-- SCANNER VIEW -->
+  <section id="view-scanner" class="view hidden">
+    <div id="qr-reader"></div>
+    <p class="scan-hint">Point the camera at a participant's QR code</p>
+    <button id="manualEntryBtn" class="link-btn manual-entry-btn">Enter ID manually</button>
+  </section>
+
+  <!-- RESULT OVERLAY (shown on top of scanner) -->
+  <section id="resultOverlay" class="result-overlay hidden">
+    <div id="resultIcon" class="result-icon"></div>
+    <h2 id="resultTitle" class="result-title"></h2>
+    <p id="resultName" class="result-name"></p>
+    <p id="resultId" class="result-id"></p>
+    <div class="result-meta">
+      <div>
+        <span class="result-meta-label">Checkpoint</span>
+        <span id="resultCheckpoint" class="result-meta-value"></span>
+      </div>
+      <div>
+        <span class="result-meta-label" id="resultTimeLabel">Time</span>
+        <span id="resultTime" class="result-meta-value"></span>
+      </div>
+    </div>
+    <button id="scanNextBtn" class="btn-primary result-btn">Scan Next</button>
+  </section>
+
+  <!-- MANUAL ENTRY MODAL -->
+  <section id="manualEntryModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Enter Participant ID</h3>
+      <input id="manualIdInput" type="text" placeholder="JAI-26-000001" autocomplete="off">
+      <div class="modal-actions">
+        <button id="manualCancelBtn" class="btn-secondary">Cancel</button>
+        <button id="manualSubmitBtn" class="btn-primary">Submit</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Scripts: order matters, no bundler -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/offlineQueue.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/ui.js"></script>
+<script>
+  // Bootstrap the app once all modules are loaded.
+  document.addEventListener('DOMContentLoaded', () => {
+    UI.init();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    }
+  });
+</script>
+</body>
+</html>

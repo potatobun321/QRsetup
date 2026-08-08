@@ -1,0 +1,393 @@
+/* ============================================================
+   JAI Conclave 2026 — Scanner PWA
+   Design tokens
+   ============================================================ */
+:root {
+  --bg:            #10160F;
+  --surface:       #182018;
+  --surface-2:     #202A20;
+  --border:        #2C3A2C;
+  --text:          #EDF3EC;
+  --text-dim:      #9AABA0;
+  --accent:        #43D99E;
+  --accent-dim:    #2E9A70;
+  --amber:         #E8B339;
+  --red:           #E6533C;
+  --radius:        16px;
+  --radius-sm:     10px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+button, input {
+  font-family: inherit;
+}
+
+.hidden { display: none !important; }
+
+/* ---------------- Status bar ---------------- */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.status-left { display: flex; flex-direction: column; line-height: 1.25; }
+.status-name { font-weight: 700; font-size: 14px; }
+.status-checkpoint { font-size: 12px; color: var(--accent); font-weight: 600; }
+.status-right { display: flex; align-items: center; gap: 12px; }
+
+.conn-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(67,217,158,0.15);
+}
+.conn-dot.offline {
+  background: var(--amber);
+  box-shadow: 0 0 0 3px rgba(232,179,57,0.15);
+}
+
+.pending-badge {
+  background: var(--amber);
+  color: #1a1400;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 2px 7px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  padding: 4px;
+}
+
+/* ---------------- App / views ---------------- */
+#app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.view-inner {
+  padding: 24px 20px;
+  padding-top: max(24px, env(safe-area-inset-top));
+}
+
+.view-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 18px;
+  letter-spacing: -0.01em;
+}
+
+/* ---------------- Login ---------------- */
+#view-login {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(67,217,158,0.14), transparent 60%),
+    var(--bg);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+}
+
+.brand {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 2px;
+}
+.brand span { color: var(--accent); }
+.brand-sub {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin: 0 0 28px;
+  font-weight: 500;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin: 16px 0 6px;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 18px;
+  padding: 14px 16px;
+  outline: none;
+}
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(67,217,158,0.18);
+}
+#pin {
+  letter-spacing: 0.5em;
+  text-align: center;
+  font-weight: 700;
+}
+
+.btn-primary {
+  width: 100%;
+  margin-top: 22px;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #06170F;
+  font-size: 16px;
+  font-weight: 800;
+  min-height: 52px;
+}
+.btn-primary:active { background: var(--accent-dim); }
+.btn-primary:disabled { opacity: 0.5; }
+
+.btn-secondary {
+  flex: 1;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  min-height: 48px;
+}
+
+.error-text {
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* ---------------- Checkpoint list ---------------- */
+.checkpoint-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkpoint-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  min-height: 60px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  text-align: left;
+}
+.checkpoint-btn:active { background: var(--surface-2); border-color: var(--accent); }
+.checkpoint-btn::after {
+  content: "›";
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 800;
+}
+.checkpoint-btn:disabled {
+  opacity: 0.4;
+}
+
+/* ---------------- Scanner ---------------- */
+#view-scanner {
+  position: relative;
+  background: #000;
+}
+#qr-reader {
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+}
+#qr-reader video { object-fit: cover; }
+
+.scan-hint {
+  position: absolute;
+  bottom: 76px;
+  left: 0; right: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  margin: 0;
+  pointer-events: none;
+}
+
+.manual-entry-btn {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* ---------------- Result overlay ---------------- */
+.result-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+  text-align: center;
+  background: var(--bg);
+}
+.result-overlay.success { background: #0E3B27; }
+.result-overlay.duplicate { background: #4A3A0D; }
+.result-overlay.error { background: #4A1710; }
+.result-overlay.pending { background: #2A2410; }
+
+.result-icon {
+  width: 84px; height: 84px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px;
+  margin-bottom: 18px;
+  background: rgba(255,255,255,0.12);
+}
+
+.result-title {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+.result-name {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+.result-id {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+  margin: 2px 0 0;
+  letter-spacing: 0.02em;
+}
+
+.result-meta {
+  display: flex;
+  gap: 40px;
+  margin-top: 24px;
+}
+.result-meta > div { display: flex; flex-direction: column; align-items: center; }
+.result-meta-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.6);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.result-meta-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.result-btn {
+  margin-top: 32px;
+  max-width: 320px;
+}
+
+/* ---------------- Manual entry modal ---------------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: 18px 18px 0 0;
+  padding: 22px 20px max(22px, env(safe-area-inset-bottom));
+  border: 1px solid var(--border);
+  border-bottom: none;
+}
+.modal-card h3 { margin: 0 0 14px; font-size: 16px; }
+.modal-card input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 17px;
+  padding: 13px 14px;
+  outline: none;
+  text-transform: uppercase;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.modal-actions .btn-primary { margin-top: 0; }
+
+@media (min-width: 480px) {
+  .status-bar, .view-inner { padding-left: 24px; padding-right: 24px; }
+}
