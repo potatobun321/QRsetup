@@ -122,7 +122,19 @@
   document.addEventListener('DOMContentLoaded', () => {
     UI.init();
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js?v=1.0.5').catch(err => {
+      navigator.serviceWorker.register('service-worker.js?v=1.0.5').then(reg => {
+        reg.onupdatefound = () => {
+          const installingWorker = reg.installing;
+          if (installingWorker) {
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New update available, reload automatically to apply immediately
+                window.location.reload();
+              }
+            };
+          }
+        };
+      }).catch(err => {
         console.warn('Service worker registration failed:', err);
       });
     }
