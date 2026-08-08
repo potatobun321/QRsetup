@@ -16,6 +16,7 @@ const Api = (() => {
     try {
       const res = await fetch(Config.API_URL, {
         method: "POST",
+        redirect: "follow",
         // Apps Script Web Apps don't handle a preflighted application/json
         // request well from all setups; text/plain avoids a CORS preflight
         // while the body itself is still valid JSON, which GAS parses fine

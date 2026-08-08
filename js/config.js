@@ -13,7 +13,7 @@ const Config = {
 
   // Bump this string on every deploy that changes cached files.
   // The service worker uses it to know when to refresh its cache.
-  APP_VERSION: "v1.0.1",
+  APP_VERSION: "v1.0.2",
 
   // How long a scan result stays on screen before auto-returning
   // to the scanner (milliseconds). 0 disables auto-dismiss.
