@@ -1,10 +1,10 @@
 /**
  * scanner.js
  * ---------------------------------------------------------------
- * Bulletproof, zero-crash camera & QR scanner engine.
- * - Multi-tier camera fallback ({ facingMode: "environment" } -> camera list).
- * - Safe viewport-independent QR decoding.
- * - Hardware torch / flashlight detection & control.
+ * Proven, rock-solid wrapper around html5-qrcode.
+ * - Clean DOM reset before camera start.
+ * - Dual-tier fallback (environment rear camera -> default camera).
+ * - Safe hardware torch control without stream pollution.
  * ---------------------------------------------------------------
  */
 const Scanner = (() => {
@@ -25,24 +25,11 @@ const Scanner = (() => {
     return null;
   }
 
-  function getQrConfig() {
-    return {
-      fps: 15,
-      qrbox: (viewfinderWidth, viewfinderHeight) => {
-        const minDim = Math.min(viewfinderWidth || 280, viewfinderHeight || 280);
-        const size = Math.max(180, Math.floor(minDim * 0.85));
-        return { width: size, height: size };
-      },
-      aspectRatio: 1.0,
-      disableFlip: false,
-    };
-  }
-
   async function start(onDecode) {
     onDecodeCallback = onDecode;
     if (isRunning) return;
 
-    // 1. Clean up any previous dangling instance
+    // Clean up previous DOM and instance
     if (html5QrCode) {
       try {
         await html5QrCode.stop();
@@ -51,85 +38,50 @@ const Scanner = (() => {
       html5QrCode = null;
     }
 
-    // 2. Initialize instance safely
+    const container = document.getElementById(READER_ELEMENT_ID);
+    if (container) container.innerHTML = "";
+
+    html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, /* verbose= */ false);
+
+    const config = {
+      fps: 15,
+      qrbox: (viewfinderWidth, viewfinderHeight) => {
+        const minDim = Math.min(viewfinderWidth || 280, viewfinderHeight || 280);
+        const size = Math.floor(minDim * 0.75);
+        return { width: size, height: size };
+      },
+      aspectRatio: 1.0,
+    };
+
     try {
-      html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, {
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
-        },
-        verbose: false,
-      });
-    } catch (e) {
-      // Fallback if BarcodeDetector configuration fails
-      html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, /* verbose= */ false);
-    }
-
-    const config = getQrConfig();
-
-    // 3. Multi-tier camera start sequence (Environment -> Device ID -> User)
-    let started = false;
-
-    // Tier 1: Standard Back Camera (facingMode: environment)
-    try {
+      // Tier 1: Try rear camera (facingMode: environment)
       await html5QrCode.start(
         { facingMode: "environment" },
         config,
         (decodedText) => handleDecode(decodedText),
         () => {}
       );
-      started = true;
-    } catch (envError) {
-      console.warn("Tier 1 environment camera failed, trying camera enumerate:", envError);
-    }
-
-    // Tier 2: Enumerate devices and pick back camera or primary camera
-    if (!started) {
+      isRunning = true;
+      isPaused = false;
+      isTorchOn = false;
+    } catch (err) {
+      console.warn("Back camera failed, trying fallback camera:", err);
+      // Tier 2: Try default/user camera
       try {
-        const cameras = await Html5Qrcode.getCameras();
-        if (cameras && cameras.length > 0) {
-          // Prefer camera with "back" or "rear" in label, else first camera
-          const backCam = cameras.find((c) =>
-            /back|rear|environment/i.test(c.label)
-          );
-          const chosenCamId = backCam ? backCam.id : cameras[0].id;
-
-          await html5QrCode.start(
-            chosenCamId,
-            config,
-            (decodedText) => handleDecode(decodedText),
-            () => {}
-          );
-          started = true;
-        }
-      } catch (enumError) {
-        console.warn("Tier 2 camera enumeration failed:", enumError);
+        await html5QrCode.start(
+          { facingMode: "user" },
+          config,
+          (decodedText) => handleDecode(decodedText),
+          () => {}
+        );
+        isRunning = true;
+        isPaused = false;
+        isTorchOn = false;
+      } catch (fallbackErr) {
+        isRunning = false;
+        throw fallbackErr;
       }
     }
-
-    // Tier 3: Universal fallback without facing constraints
-    if (!started) {
-      await html5QrCode.start(
-        { facingMode: "user" },
-        config,
-        (decodedText) => handleDecode(decodedText),
-        () => {}
-      );
-      started = true;
-    }
-
-    isRunning = true;
-    isPaused = false;
-    isTorchOn = false;
-
-    // Try applying continuous autofocus if device track supports it
-    try {
-      const track = getVideoTrack();
-      if (track && track.applyConstraints) {
-        track.applyConstraints({
-          advanced: [{ focusMode: "continuous" }],
-        }).catch(() => {});
-      }
-    } catch (e) {}
   }
 
   function handleDecode(decodedText) {
@@ -146,8 +98,7 @@ const Scanner = (() => {
     const track = getVideoTrack();
     if (!track || typeof track.getCapabilities !== "function") return false;
     try {
-      const capabilities = track.getCapabilities();
-      return !!capabilities.torch;
+      return !!track.getCapabilities().torch;
     } catch (e) {
       return false;
     }
@@ -163,14 +114,14 @@ const Scanner = (() => {
       isTorchOn = !!on;
       return true;
     } catch (err) {
-      console.warn("Torch constraint failed:", err);
+      console.warn("Torch failed:", err);
       return false;
     }
   }
 
   async function toggleTorch() {
-    const targetState = !isTorchOn;
-    const ok = await setTorch(targetState);
+    const target = !isTorchOn;
+    const ok = await setTorch(target);
     return ok ? isTorchOn : false;
   }
 

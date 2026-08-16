@@ -291,11 +291,12 @@ const UI = (() => {
 
   async function openScannerView() {
     showView("viewScanner");
+    await new Promise((resolve) => setTimeout(resolve, 80));
     try {
       await Scanner.start(onQrDecoded);
-      // Check hardware torch availability after stream initializes
-      setTimeout(checkTorchAvailability, 600);
+      setTimeout(checkTorchAvailability, 500);
     } catch (err) {
+      console.error("Camera start error:", err);
       alert("Couldn't access the camera. Please allow camera permission for this site and reload.");
     }
   }
