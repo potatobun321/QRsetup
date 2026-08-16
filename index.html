@@ -25,6 +25,7 @@
     </div>
   </div>
   <div class="status-right">
+    <span id="scanCounter" class="scan-counter-badge" title="Scans completed this session">✓ 0</span>
     <span id="pendingBadge" class="pending-badge hidden">0</span>
     <span id="connDot" class="conn-dot online" title="Online"></span>
     <button id="logoutBtn" class="link-btn" type="button">Logout</button>
@@ -75,6 +76,18 @@
   <!-- CLEAN SCANNER VIEW -->
   <section id="view-scanner" class="view hidden">
     <div id="qr-reader"></div>
+    
+    <!-- Viewfinder Reticle Guide -->
+    <div class="scanner-guide">
+      <div class="guide-box">
+        <span class="guide-corner top-left"></span>
+        <span class="guide-corner top-right"></span>
+        <span class="guide-corner bottom-left"></span>
+        <span class="guide-corner bottom-right"></span>
+        <div class="guide-laser"></div>
+      </div>
+    </div>
+
     <div class="scanner-top-bar">
       <button id="torchToggleBtn" class="btn-torch hidden" type="button" aria-label="Toggle Flashlight">
         <span class="torch-icon">🔦</span>
@@ -82,7 +95,7 @@
       </button>
     </div>
     <div class="scanner-bottom-bar">
-      <p class="scan-hint">Point camera at QR code</p>
+      <p class="scan-hint">Point camera at participant QR code</p>
       <button id="manualEntryBtn" class="btn-manual" type="button">Enter ID Manually</button>
     </div>
   </section>

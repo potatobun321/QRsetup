@@ -148,7 +148,7 @@ function generateQRs() {
         continue;
       }
       
-      const apiUrl = `https://quickchart.io/qr?text=${encodeURIComponent(participantId)}&size=500&margin=2`;
+      const apiUrl = `https://quickchart.io/qr?text=${encodeURIComponent(participantId)}&ecLevel=L&size=600&margin=2`;
       
       try {
         const response = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });

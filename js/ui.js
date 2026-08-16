@@ -109,6 +109,7 @@ const UI = (() => {
       statusBar: document.getElementById("statusBar"),
       volunteerName: document.getElementById("volunteerName"),
       checkpointName: document.getElementById("checkpointName"),
+      scanCounter: document.getElementById("scanCounter"),
       pendingBadge: document.getElementById("pendingBadge"),
       connDot: document.getElementById("connDot"),
       logoutBtn: document.getElementById("logoutBtn"),
@@ -322,6 +323,8 @@ const UI = (() => {
     handleScan(participantId);
   }
 
+  let sessionScanCount = 0;
+
   function wireManualEntry() {
     els.manualEntryBtn.addEventListener("click", () => {
       els.manualIdInput.value = "";
@@ -332,9 +335,15 @@ const UI = (() => {
       els.manualModal.classList.add("hidden");
     });
     els.manualSubmitBtn.addEventListener("click", () => {
-      const id = els.manualIdInput.value.trim().toUpperCase();
+      let id = els.manualIdInput.value.trim().toUpperCase();
       els.manualModal.classList.add("hidden");
-      if (id) handleScan(id);
+      if (!id) return;
+
+      // Smart shorthand: user types "42" -> expands to "JAI-26-000042"
+      if (/^\d{1,6}$/.test(id)) {
+        id = "JAI-26-" + id.padStart(6, "0");
+      }
+      handleScan(id);
     });
   }
 
@@ -410,6 +419,10 @@ const UI = (() => {
 
     switch (status) {
       case "SUCCESS": {
+        sessionScanCount++;
+        if (els.scanCounter) {
+          els.scanCounter.textContent = `✓ ${sessionScanCount}`;
+        }
         SoundFX.playSuccess();
         Haptics.success();
         const p = res.participant || {};
