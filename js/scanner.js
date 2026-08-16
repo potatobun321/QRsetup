@@ -1,11 +1,10 @@
 /**
  * scanner.js
  * ---------------------------------------------------------------
- * Ultra-fast QR scanner engine.
- * - Hardware acceleration via native BarcodeDetector API (15ms decode).
- * - Full-frame omnidirectional scanning (no rigid box fitting needed).
- * - Continuous camera autofocus & optimal resolution constraints.
- * - Hardware torch / flashlight control.
+ * Bulletproof, zero-crash camera & QR scanner engine.
+ * - Multi-tier camera fallback ({ facingMode: "environment" } -> camera list).
+ * - Safe viewport-independent QR decoding.
+ * - Hardware torch / flashlight detection & control.
  * ---------------------------------------------------------------
  */
 const Scanner = (() => {
@@ -26,60 +25,111 @@ const Scanner = (() => {
     return null;
   }
 
-  async function start(onDecode) {
-    onDecodeCallback = onDecode;
-    if (isRunning) return;
-
-    // Enable native BarcodeDetector API for instant GPU decoding
-    html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, {
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true,
-      },
-      verbose: false,
-    });
-
-    const config = {
-      fps: 22, // Higher scan rate to catch fast frames
-      // Generous full-frame scanner box (no pixel cropping)
+  function getQrConfig() {
+    return {
+      fps: 15,
       qrbox: (viewfinderWidth, viewfinderHeight) => {
-        const minDim = Math.min(viewfinderWidth, viewfinderHeight);
-        const size = Math.floor(minDim * 0.88);
+        const minDim = Math.min(viewfinderWidth || 280, viewfinderHeight || 280);
+        const size = Math.max(180, Math.floor(minDim * 0.85));
         return { width: size, height: size };
       },
       aspectRatio: 1.0,
       disableFlip: false,
     };
+  }
 
-    const cameraConstraints = {
-      facingMode: "environment",
-      width: { ideal: 1280, min: 640 },
-      height: { ideal: 720, min: 480 },
-    };
+  async function start(onDecode) {
+    onDecodeCallback = onDecode;
+    if (isRunning) return;
 
+    // 1. Clean up any previous dangling instance
+    if (html5QrCode) {
+      try {
+        await html5QrCode.stop();
+        html5QrCode.clear();
+      } catch (e) {}
+      html5QrCode = null;
+    }
+
+    // 2. Initialize instance safely
+    try {
+      html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, {
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
+        verbose: false,
+      });
+    } catch (e) {
+      // Fallback if BarcodeDetector configuration fails
+      html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, /* verbose= */ false);
+    }
+
+    const config = getQrConfig();
+
+    // 3. Multi-tier camera start sequence (Environment -> Device ID -> User)
+    let started = false;
+
+    // Tier 1: Standard Back Camera (facingMode: environment)
     try {
       await html5QrCode.start(
-        cameraConstraints,
+        { facingMode: "environment" },
         config,
         (decodedText) => handleDecode(decodedText),
-        () => {
-          /* Frame misses are expected and ignored */
-        }
+        () => {}
       );
-      isRunning = true;
-      isPaused = false;
-      isTorchOn = false;
+      started = true;
+    } catch (envError) {
+      console.warn("Tier 1 environment camera failed, trying camera enumerate:", envError);
+    }
 
-      // Apply continuous autofocus if supported by hardware
+    // Tier 2: Enumerate devices and pick back camera or primary camera
+    if (!started) {
+      try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length > 0) {
+          // Prefer camera with "back" or "rear" in label, else first camera
+          const backCam = cameras.find((c) =>
+            /back|rear|environment/i.test(c.label)
+          );
+          const chosenCamId = backCam ? backCam.id : cameras[0].id;
+
+          await html5QrCode.start(
+            chosenCamId,
+            config,
+            (decodedText) => handleDecode(decodedText),
+            () => {}
+          );
+          started = true;
+        }
+      } catch (enumError) {
+        console.warn("Tier 2 camera enumeration failed:", enumError);
+      }
+    }
+
+    // Tier 3: Universal fallback without facing constraints
+    if (!started) {
+      await html5QrCode.start(
+        { facingMode: "user" },
+        config,
+        (decodedText) => handleDecode(decodedText),
+        () => {}
+      );
+      started = true;
+    }
+
+    isRunning = true;
+    isPaused = false;
+    isTorchOn = false;
+
+    // Try applying continuous autofocus if device track supports it
+    try {
       const track = getVideoTrack();
       if (track && track.applyConstraints) {
         track.applyConstraints({
           advanced: [{ focusMode: "continuous" }],
         }).catch(() => {});
       }
-    } catch (err) {
-      isRunning = false;
-      throw err;
-    }
+    } catch (e) {}
   }
 
   function handleDecode(decodedText) {
@@ -88,7 +138,6 @@ const Scanner = (() => {
     if (onDecodeCallback) onDecodeCallback(decodedText.trim());
   }
 
-  /** Call this once the result screen is dismissed to resume reading immediately. */
   function resume() {
     isPaused = false;
   }
@@ -96,8 +145,12 @@ const Scanner = (() => {
   function hasTorch() {
     const track = getVideoTrack();
     if (!track || typeof track.getCapabilities !== "function") return false;
-    const capabilities = track.getCapabilities();
-    return !!capabilities.torch;
+    try {
+      const capabilities = track.getCapabilities();
+      return !!capabilities.torch;
+    } catch (e) {
+      return false;
+    }
   }
 
   async function setTorch(on) {
@@ -110,7 +163,7 @@ const Scanner = (() => {
       isTorchOn = !!on;
       return true;
     } catch (err) {
-      console.warn("Torch failed:", err);
+      console.warn("Torch constraint failed:", err);
       return false;
     }
   }
@@ -133,12 +186,11 @@ const Scanner = (() => {
     try {
       await html5QrCode.stop();
       html5QrCode.clear();
-    } catch (e) {
-      /* Camera may already be stopped */
-    }
+    } catch (e) {}
     isRunning = false;
     isPaused = false;
     isTorchOn = false;
+    html5QrCode = null;
   }
 
   return {
