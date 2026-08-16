@@ -395,6 +395,49 @@ input[type="password"]:focus {
   object-fit: cover !important;
 }
 
+.scanner-top-bar {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-torch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(25, 35, 30, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.btn-torch:active {
+  transform: scale(0.96);
+}
+
+.btn-torch.active {
+  background: rgba(226, 184, 87, 0.25);
+  border-color: var(--amber);
+  color: var(--amber);
+  box-shadow: 0 0 12px rgba(226, 184, 87, 0.35);
+}
+
+.torch-icon {
+  font-size: 14px;
+}
+
 .scanner-bottom-bar {
   position: absolute;
   bottom: 0;

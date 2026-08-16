@@ -1,15 +1,108 @@
 /**
  * ui.js
  * ---------------------------------------------------------------
- * Ties everything together: view navigation, wiring up forms and
- * buttons, driving the scanner, and rendering results/errors.
- * This is the app's entry point (UI.init() is called from index.html).
+ * Ties everything together: view navigation, form & button events,
+ * camera lifecycle, audio synthesizer beeps, haptics, and instant
+ * client-side QR validation. Entry point: UI.init().
  * ---------------------------------------------------------------
  */
+
+/* ---------------- Web Audio API Synthesizer ---------------- */
+const SoundFX = (() => {
+  let ctx = null;
+
+  function getContext() {
+    if (!ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        ctx = new AudioCtx();
+      }
+    }
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+    return ctx;
+  }
+
+  function playTone(freq, type, duration, startTime = 0) {
+    const audioCtx = getContext();
+    if (!audioCtx) return;
+
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = type || "sine";
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
+
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime + startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(audioCtx.currentTime + startTime);
+      osc.stop(audioCtx.currentTime + startTime + duration);
+    } catch (e) {
+      /* Audio policy or device limitation */
+    }
+  }
+
+  function playSuccess() {
+    // Upbeat high chime (587Hz -> 880Hz)
+    playTone(587.33, "sine", 0.09, 0);
+    playTone(880, "sine", 0.14, 0.08);
+  }
+
+  function playDuplicate() {
+    // Amber warning double-pulse (440Hz -> 349Hz)
+    playTone(440, "triangle", 0.12, 0);
+    playTone(349.23, "triangle", 0.18, 0.11);
+  }
+
+  function playError() {
+    // Low warning buzzer (180Hz sawtooth)
+    playTone(180, "sawtooth", 0.25, 0);
+  }
+
+  function playPending() {
+    // Soft tick
+    playTone(660, "sine", 0.08, 0);
+  }
+
+  return {
+    init: getContext,
+    playSuccess,
+    playDuplicate,
+    playError,
+    playPending,
+  };
+})();
+
+/* ---------------- Differentiated Haptics ---------------- */
+const Haptics = {
+  success() {
+    if (navigator.vibrate) navigator.vibrate(40);
+  },
+  duplicate() {
+    if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+  },
+  error() {
+    if (navigator.vibrate) navigator.vibrate([140, 50, 140, 50, 200]);
+  },
+  pending() {
+    if (navigator.vibrate) navigator.vibrate(60);
+  },
+};
+
+/* ---------------- Main UI Module ---------------- */
 const UI = (() => {
   let els = {};
   let syncTimer = null;
   let dismissTimer = null;
+
+  // Regex format for Participant IDs: JAI-26-000001
+  const JAI_QR_REGEX = /^JAI-\d{2}-\d{6}$/i;
 
   function cacheEls() {
     els = {
@@ -34,6 +127,8 @@ const UI = (() => {
       checkpointList: document.getElementById("checkpointList"),
 
       viewScanner: document.getElementById("view-scanner"),
+      torchToggleBtn: document.getElementById("torchToggleBtn"),
+      torchLabel: document.getElementById("torchLabel"),
       manualEntryBtn: document.getElementById("manualEntryBtn"),
 
       resultOverlay: document.getElementById("resultOverlay"),
@@ -54,9 +149,11 @@ const UI = (() => {
   }
 
   function showView(name) {
-    ["viewLogin", "viewCheckpoint", "viewScanner"].forEach((k) => els[k].classList.add("hidden"));
-    els[name].classList.remove("hidden");
-    els.statusBar.classList.toggle("hidden", name === "viewLogin");
+    ["viewLogin", "viewCheckpoint", "viewScanner"].forEach((k) => {
+      if (els[k]) els[k].classList.add("hidden");
+    });
+    if (els[name]) els[name].classList.remove("hidden");
+    if (els.statusBar) els.statusBar.classList.toggle("hidden", name === "viewLogin");
   }
 
   /* ---------------- Login ---------------- */
@@ -64,6 +161,8 @@ const UI = (() => {
   function wireLogin() {
     els.loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      SoundFX.init(); // Unlock AudioContext on user action
+
       const volunteerId = els.volunteerIdInput.value.trim();
       const pin = els.pinInput.value.trim();
       if (!volunteerId || !pin) return;
@@ -88,13 +187,13 @@ const UI = (() => {
 
     if (els.resetCacheBtn) {
       els.resetCacheBtn.addEventListener("click", async () => {
-        if ('serviceWorker' in navigator) {
+        if ("serviceWorker" in navigator) {
           const registrations = await navigator.serviceWorker.getRegistrations();
           for (let reg of registrations) {
             await reg.unregister();
           }
         }
-        if ('caches' in window) {
+        if ("caches" in window) {
           const keys = await caches.keys();
           for (let k of keys) {
             await caches.delete(k);
@@ -131,20 +230,31 @@ const UI = (() => {
     }
   }
 
-  /* ---------------- Checkpoint select ---------------- */
+  /* ---------------- Checkpoint Select ---------------- */
 
   function renderCheckpoints(checkpoints) {
     els.checkpointList.innerHTML = "";
     (checkpoints || []).forEach((cp) => {
       const btn = document.createElement("button");
       btn.className = "checkpoint-btn";
-      const icon = cp.id === "ENT" ? "🚪" : (cp.id === "BAD" ? "🎫" : (cp.id.indexOf("CAF") !== -1 || cp.id.indexOf("LUNCH") !== -1 ? "🍱" : (cp.id === "COU" ? "🏛️" : "📍")));
+      const icon =
+        cp.id === "ENT"
+          ? "🚪"
+          : cp.id === "BAD"
+          ? "🎫"
+          : cp.id.indexOf("CAF") !== -1 || cp.id.indexOf("LUNCH") !== -1
+          ? "🍱"
+          : cp.id === "COU"
+          ? "🏛️"
+          : "📍";
       btn.innerHTML = `
         <div class="cp-left">
           <span class="cp-icon">${icon}</span>
           <div class="cp-info">
             <span class="cp-name">${cp.name}</span>
-            <span class="cp-tag ${cp.duplicateAllowed ? 'cp-multi' : 'cp-single'}">${cp.duplicateAllowed ? 'Multi-scan' : 'Single entry'}</span>
+            <span class="cp-tag ${cp.duplicateAllowed ? "cp-multi" : "cp-single"}">${
+        cp.duplicateAllowed ? "Multi-scan" : "Single entry"
+      }</span>
           </div>
         </div>
         <span class="cp-arrow">›</span>
@@ -165,6 +275,10 @@ const UI = (() => {
     if (els.changeCpBtn) {
       els.changeCpBtn.addEventListener("click", async () => {
         await Scanner.stop();
+        if (els.torchToggleBtn) {
+          els.torchToggleBtn.classList.remove("active");
+          els.torchToggleBtn.classList.add("hidden");
+        }
         const session = Auth.getSession();
         renderCheckpoints(session ? session.checkpoints : []);
         showView("viewCheckpoint");
@@ -172,21 +286,39 @@ const UI = (() => {
     }
   }
 
-  /* ---------------- Scanner ---------------- */
+  /* ---------------- Scanner View & Torch ---------------- */
 
   async function openScannerView() {
     showView("viewScanner");
     try {
       await Scanner.start(onQrDecoded);
+      // Check hardware torch availability after stream initializes
+      setTimeout(checkTorchAvailability, 600);
     } catch (err) {
-      alert(
-        "Couldn't access the camera. Please allow camera permission for this site and reload."
-      );
+      alert("Couldn't access the camera. Please allow camera permission for this site and reload.");
+    }
+  }
+
+  function checkTorchAvailability() {
+    if (!els.torchToggleBtn) return;
+    const canTorch = Scanner.hasTorch();
+    els.torchToggleBtn.classList.toggle("hidden", !canTorch);
+    els.torchToggleBtn.classList.toggle("active", Scanner.getTorchState());
+  }
+
+  function wireTorch() {
+    if (els.torchToggleBtn) {
+      els.torchToggleBtn.addEventListener("click", async () => {
+        const isNowOn = await Scanner.toggleTorch();
+        els.torchToggleBtn.classList.toggle("active", isNowOn);
+        if (els.torchLabel) {
+          els.torchLabel.textContent = isNowOn ? "Torch On" : "Torch";
+        }
+      });
     }
   }
 
   function onQrDecoded(participantId) {
-    vibrate(40);
     handleScan(participantId);
   }
 
@@ -206,11 +338,31 @@ const UI = (() => {
     });
   }
 
-  /* ---------------- Scan handling ---------------- */
+  /* ---------------- Scan Processing & Validation ---------------- */
 
-  async function handleScan(participantId) {
+  async function handleScan(rawParticipantId) {
     const session = Auth.getSession();
     if (!session || !session.selectedCheckpoint) return;
+
+    const participantId = String(rawParticipantId || "").trim().toUpperCase();
+    const checkpointName = session.selectedCheckpoint.name;
+
+    // 1. FAST CLIENT-SIDE REGEX PRE-VALIDATION (0ms Server Load)
+    if (!JAI_QR_REGEX.test(participantId)) {
+      SoundFX.playError();
+      Haptics.error();
+      showResult({
+        overlayClass: "error",
+        icon: "✕",
+        title: "Invalid QR Code",
+        name: participantId || "Unknown Code",
+        id: "Expected format: JAI-26-XXXXXX",
+        checkpoint: checkpointName,
+        timeLabel: "Status",
+        time: "Format Mismatch",
+      });
+      return;
+    }
 
     const payload = {
       participantId,
@@ -228,7 +380,7 @@ const UI = (() => {
       const res = await Api.scan(session.volunteerId, session.pin, payload);
       handleScanResponse(res, payload, session);
     } catch (err) {
-      // Network/timeout failure — queue for offline sync rather than lose the scan.
+      // Network drop / timeout -> queue offline rather than losing the scan
       await queueAndShowPending(payload, session);
     }
   }
@@ -236,12 +388,15 @@ const UI = (() => {
   async function queueAndShowPending(payload, session) {
     await OfflineQueue.add(payload);
     await refreshPendingBadge();
+    SoundFX.playPending();
+    Haptics.pending();
+
     showResult({
       overlayClass: "pending",
       icon: "⏳",
       title: "Saved — will sync",
       name: payload.participantId,
-      id: "",
+      id: "Stored locally in offline queue",
       checkpoint: session.selectedCheckpoint.name,
       timeLabel: "Queued",
       time: formatTime(new Date()),
@@ -255,6 +410,8 @@ const UI = (() => {
 
     switch (status) {
       case "SUCCESS": {
+        SoundFX.playSuccess();
+        Haptics.success();
         const p = res.participant || {};
         showResult({
           overlayClass: "success",
@@ -269,6 +426,8 @@ const UI = (() => {
         break;
       }
       case "DUPLICATE_SCAN": {
+        SoundFX.playDuplicate();
+        Haptics.duplicate();
         const p = res.participant || {};
         const prev = res.previousScan || {};
         showResult({
@@ -279,23 +438,27 @@ const UI = (() => {
           id: payload.participantId,
           checkpoint: checkpointName,
           timeLabel: prev.timestamp ? "Previous scan" : "Status",
-          time: prev.timestamp ? formatTime(new Date(prev.timestamp)) : "Duplicate",
+          time: prev.timestamp ? formatTime(new Date(prev.timestamp)) : "Duplicate Entry",
         });
         break;
       }
       case "INVALID_ID":
+        SoundFX.playError();
+        Haptics.error();
         showResult({
           overlayClass: "error",
           icon: "✕",
           title: "Not a Valid Participant",
           name: payload.participantId,
-          id: "Check the QR code or ask at the help desk",
+          id: "ID not found in master database",
           checkpoint: checkpointName,
           timeLabel: "Time",
           time: nowLabel,
         });
         break;
       case "INVALID_CHECKPOINT":
+        SoundFX.playError();
+        Haptics.error();
         showResult({
           overlayClass: "error",
           icon: "✕",
@@ -308,6 +471,8 @@ const UI = (() => {
         });
         break;
       case "AUTH_FAILED":
+        SoundFX.playError();
+        Haptics.error();
         showResult({
           overlayClass: "error",
           icon: "✕",
@@ -321,8 +486,8 @@ const UI = (() => {
         setTimeout(() => forceLogout(), Config.RESULT_AUTO_DISMISS_MS + 400);
         break;
       case "TIMEOUT":
-        // Server was momentarily locked. Queue it so the background
-        // sync loop retries automatically — clientScanId keeps it safe.
+        SoundFX.playPending();
+        Haptics.pending();
         OfflineQueue.add(payload).then(refreshPendingBadge);
         showResult({
           overlayClass: "pending",
@@ -336,6 +501,8 @@ const UI = (() => {
         });
         break;
       default:
+        SoundFX.playError();
+        Haptics.error();
         showResult({
           overlayClass: "error",
           icon: "✕",
@@ -376,9 +543,10 @@ const UI = (() => {
     els.scanNextBtn.addEventListener("click", dismissResult);
   }
 
-  /* ---------------- Status bar / logout ---------------- */
+  /* ---------------- Status Bar & Logout ---------------- */
 
   function updateStatusBar(session) {
+    if (!session) return;
     els.volunteerName.textContent = session.volunteerName || session.volunteerId;
     els.checkpointName.textContent = session.selectedCheckpoint
       ? session.selectedCheckpoint.name
@@ -401,12 +569,16 @@ const UI = (() => {
 
   async function forceLogout() {
     await Scanner.stop();
+    if (els.torchToggleBtn) {
+      els.torchToggleBtn.classList.remove("active");
+      els.torchToggleBtn.classList.add("hidden");
+    }
     Auth.logout();
     els.loginForm.reset();
     showView("viewLogin");
   }
 
-  /* ---------------- Connectivity + background sync ---------------- */
+  /* ---------------- Connectivity & Background Sync ---------------- */
 
   function updateConnDot() {
     els.connDot.classList.toggle("offline", !navigator.onLine);
@@ -447,7 +619,6 @@ const UI = (() => {
 
   function makeUUID() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-    // Fallback for older Android WebViews without crypto.randomUUID.
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
       const r = (Math.random() * 16) | 0;
       const v = c === "x" ? r : (r & 0x3) | 0x8;
@@ -459,22 +630,23 @@ const UI = (() => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
-  function vibrate(ms) {
-    if (navigator.vibrate) navigator.vibrate(ms);
-  }
-
   /* ---------------- Init ---------------- */
 
   function init() {
     cacheEls();
     wireLogin();
     wireCheckpointSwitch();
+    wireTorch();
     wireManualEntry();
     wireResultDismiss();
     wireLogout();
     wireConnectivity();
     updateConnDot();
     refreshPendingBadge();
+
+    // User gesture listener to unlock AudioContext
+    document.addEventListener("click", () => SoundFX.init(), { once: true });
+    document.addEventListener("touchstart", () => SoundFX.init(), { once: true });
 
     if (Auth.isLoggedIn()) {
       goToCheckpointOrScanner();
