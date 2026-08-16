@@ -541,6 +541,7 @@ const UI = (() => {
 
   function wireResultDismiss() {
     els.scanNextBtn.addEventListener("click", dismissResult);
+    els.resultOverlay.addEventListener("click", dismissResult);
   }
 
   /* ---------------- Status Bar & Logout ---------------- */

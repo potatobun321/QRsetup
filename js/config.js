@@ -13,11 +13,11 @@ const Config = {
 
   // Bump this string on every deploy that changes cached files.
   // The service worker uses it to know when to refresh its cache.
-  APP_VERSION: "v1.1.0",
+  APP_VERSION: "v1.1.1",
 
-  // How long a scan result stays on screen before auto-returning
-  // to the scanner (milliseconds). 0 disables auto-dismiss.
-  RESULT_AUTO_DISMISS_MS: 2200,
+  // Fast auto-dismiss (1.2s) for high-throughput scanning queues.
+  // Volunteers can also tap anywhere on the overlay to scan instantly.
+  RESULT_AUTO_DISMISS_MS: 1200,
 
   // How many queued offline scans to send per bulkSync request.
   SYNC_BATCH_SIZE: 20,
