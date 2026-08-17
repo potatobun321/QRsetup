@@ -16,13 +16,13 @@ function setupWorkbook() {
       ["Event_Prefix", "JAI", "", "ENT", "Main Entrance", "FALSE", "TRUE", "", "", "VOL-01", "John Doe", "1234", "TRUE", "ALL"],
       ["Event_Year", "26", "", "BAD", "Badge Collection", "FALSE", "TRUE", "", "", "", "", "", "", ""],
       ["QR_Folder_ID", "[INSERT_ID]", "", "CAFD1", "Lunch Day 1", "FALSE", "TRUE", "LUNCH", "", "", "", "", "", ""],
-      ["Cert_Folder_ID", "[INSERT_ID]", "", "COU", "Council Session", "TRUE", "TRUE", "", "", "", "", "", "", ""]
+      ["ID_Card_Folder_ID", "[INSERT_ID]", "", "COU", "Council Session", "TRUE", "TRUE", "", "", "", "", "", "", ""]
     ],
     "01_Participants_Master": [
       ["Participant_ID", "Full_Name", "Email_Address", "Phone_Number", "Institution", "Track", "Sub_Track", "Participant_Type", "Stay_Status", "Accommodation_Details", "Lunch_Permitted", "Dinner_Permitted"]
     ],
     "02_Operational_State": [
-      ["Participant_ID", "Badge_Issued_At", "Last_Scan_At", "Last_Known_Location", "Meals_Claimed", "QR_Drive_URL", "QR_Email_Sent_At", "Email_Delivery_Status", "Email_Retry_Count", "Certificate_Drive_URL", "Certificate_Sent_At", "Admin_Remarks"]
+      ["Participant_ID", "Badge_Issued_At", "Last_Scan_At", "Last_Known_Location", "Meals_Claimed", "QR_Drive_URL", "ID_Card_Drive_URL", "Email_Sent_At", "Email_Delivery_Status", "Email_Retry_Count", "Admin_Remarks"]
     ],
     "03_Activity_Log": [
       ["Timestamp", "Participant_ID", "Checkpoint_ID", "Volunteer_ID", "Scan_Status", "Message", "Client_Scan_ID"]
@@ -77,9 +77,16 @@ function setupWorkbook() {
 
   const opSheet = ss.getSheetByName("02_Operational_State");
   opSheet.getRange("A2").setFormula(`=ARRAYFORMULA(IF('01_Participants_Master'!A2:A${MAX_ROWS}="", "", '01_Participants_Master'!A2:A${MAX_ROWS}))`);
-  
+  opSheet.getRange("B2").setFormula(`=MAP(A2:A, LAMBDA(id, IF(id="", "", IFERROR(1/(1/MINIFS('03_Activity_Log'!A:A, '03_Activity_Log'!B:B, id, '03_Activity_Log'!C:C, "BAD", '03_Activity_Log'!E:E, "Success")), ""))))`);
+  opSheet.getRange("C2").setFormula(`=MAP(A2:A, LAMBDA(id, IF(id="", "", IFERROR(1/(1/MAXIFS('03_Activity_Log'!A:A, '03_Activity_Log'!B:B, id, '03_Activity_Log'!E:E, "Success")), ""))))`);
+  opSheet.getRange("D2").setFormula(`=MAP(A2:A, LAMBDA(id, IF(id="", "", IFERROR(XLOOKUP(id, '03_Activity_Log'!B:B, '03_Activity_Log'!C:C, "", 0, -1), ""))))`);
+  opSheet.getRange("E2").setFormula(`=MAP(A2:A, LAMBDA(id, IF(id="", "", COUNTIFS('03_Activity_Log'!B:B, id, '03_Activity_Log'!C:C, "CAFD1", '03_Activity_Log'!E:E, "Success"))))`);
+
+  opSheet.getRange(`B2:C${MAX_ROWS}`).setNumberFormat("m/d/yyyy h:mm:ss");
+  opSheet.getRange(`H2:H${MAX_ROWS}`).setNumberFormat("m/d/yyyy h:mm:ss");
+
   const emailStatusRule = SpreadsheetApp.newDataValidation().requireValueInList(["Pending", "Success", "Failed", "Bounced"], true).build();
-  opSheet.getRange(`H2:H${MAX_ROWS}`).setDataValidation(emailStatusRule);
+  opSheet.getRange(`I2:I${MAX_ROWS}`).setDataValidation(emailStatusRule);
 
   const adminSheet = ss.getSheetByName("04_Admin_Actions");
   const actionTypeRule = SpreadsheetApp.newDataValidation().requireValueInList(["Manual Check-in", "Badge Reprint", "QR Reissue", "Data Correction", "Other"], true).build();
