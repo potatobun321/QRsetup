@@ -13,7 +13,7 @@ function setupWorkbook() {
   const schemas = {
     "00_Configuration": [
       ["Global_Variable", "Value", "", "Checkpoint_ID", "Checkpoint_Name", "Duplicate_Allowed", "Active", "Entitlement_Rule", "", "Volunteer_ID", "Name", "PIN", "Active", "Assigned_Checkpoints"],
-      ["Event_Prefix", "JAI", "", "ENT", "Main Entrance", "FALSE", "TRUE", "", "", "VOL-01", "John Doe", "1234", "TRUE", "ALL"],
+      ["Event_Prefix", "JAI", "", "ENT", "Main Entrance", "FALSE", "TRUE", "", "", "ADM-01", "Event Executive", "123456", "TRUE", "ALL"],
       ["Event_Year", "26", "", "BAD", "Badge Collection", "FALSE", "TRUE", "", "", "", "", "", "", ""],
       ["QR_Folder_ID", "[INSERT_ID]", "", "CAFD1", "Lunch Day 1", "FALSE", "TRUE", "LUNCH", "", "", "", "", "", ""],
       ["ID_Card_Folder_ID", "[INSERT_ID]", "", "COU", "Council Session", "TRUE", "TRUE", "", "", "", "", "", "", ""]
