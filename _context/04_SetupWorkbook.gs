@@ -54,7 +54,12 @@ function setupWorkbook() {
       sheet.getRange(1, 1, 1, data[0].length).setValues([data[0]]);
     }
     
-    sheet.setFrozenRows(1);
+    try {
+      sheet.getRange("1:1").breakApart();
+      sheet.setFrozenRows(1);
+    } catch (e) {
+      Logger.log("Warning: Could not freeze rows for " + sheetName + " due to merged cells.");
+    }
     sheet.getRange(1, 1, 1, data[0].length).setFontWeight("bold").setBackground("#f3f3f3");
   }
 
