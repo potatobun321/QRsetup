@@ -138,6 +138,7 @@ function NUKE_AND_REBUILD_DATABASE() {
   // 3. Re-run the definitive setup scripts
   setupWorkbook();
   setupVolunteerRoster(); 
+  try { flushAuthCache(); } catch(e) {} // Instantly bust the auth cache so new PINs work immediately
   
   // 4. Apply "Warning" Protection to Row 1 of all new sheets to prevent accidental deletion
   const newSheets = ss.getSheets();
