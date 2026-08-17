@@ -66,6 +66,9 @@ function setupWorkbook() {
   const configSheet = ss.getSheetByName("00_Configuration");
   const booleanRule = SpreadsheetApp.newDataValidation().requireValueInList(["TRUE", "FALSE"], true).build();
   configSheet.getRange(`F2:G${MAX_ROWS}`).setDataValidation(booleanRule);
+  
+  // Fix for the old column L (which used to be Active, but is now PIN)
+  configSheet.getRange(`L2:L${MAX_ROWS}`).clearDataValidations();
   configSheet.getRange(`M2:M${MAX_ROWS}`).setDataValidation(booleanRule);
 
   if (String(configSheet.getRange("J2").getValue()).trim() === "") {
