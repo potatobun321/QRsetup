@@ -79,6 +79,29 @@ function getCheckpointsMap() {
 
 // --- SCAN HANDLERS ---
 
+function handleLogin(body) {
+  const auth = authenticate(body.volunteerId, body.pin);
+  if (!auth.ok) {
+    return { success: false, status: "AUTH_FAILED", message: "Invalid ID or PIN." };
+  }
+  
+  const allCheckpoints = getCheckpoints(); 
+  const allowedCheckpoints = [];
+  
+  allCheckpoints.forEach(cp => {
+    if (auth.assignedCheckpoints === "ALL" || auth.assignedCheckpoints.includes(cp.id)) {
+      allowedCheckpoints.push(cp);
+    }
+  });
+  
+  return {
+    success: true,
+    status: "SUCCESS",
+    volunteerName: auth.name,
+    checkpoints: allowedCheckpoints
+  };
+}
+
 function handleScan(body) {
   const auth = authenticate(body.volunteerId, body.pin);
   if (!auth.ok) return { success: false, status: "AUTH_FAILED", message: "Invalid Volunteer ID or PIN." };

@@ -91,7 +91,7 @@ function setupVolunteerRoster() {
   if (!configSheet) return;
 
   const count = 50; // Total volunteers
-  const startRow = 2; // Assuming row 2 is the start of Volunteer config (Col J to N)
+  const startRow = 3; // Preserve ADM-01 on row 2
   
   const newData = [];
   
@@ -103,12 +103,10 @@ function setupVolunteerRoster() {
       pin = String(Math.floor(1000 + Math.random() * 9000));
     } while (pin === "1234" || pin[0] === pin[1] && pin[1] === pin[2] && pin[2] === pin[3]);
     
-    // Checkpoints: "ALL" for VOL-01 (Admin), others blank by default
-    const checkpoints = (i === 1) ? "ALL" : "";
-    newData.push([volId, `Volunteer ${i}`, pin, "TRUE", checkpoints]);
+    newData.push([volId, `Volunteer ${i}`, pin, "TRUE", ""]);
   }
   
-  // Clear old data (Col J to N)
+  // Clear old data (Col J to N) starting from row 3
   configSheet.getRange(startRow, 10, Math.max(100, configSheet.getLastRow()), 5).clearContent();
   
   // Set new data
