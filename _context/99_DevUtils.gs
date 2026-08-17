@@ -115,3 +115,42 @@ function setupVolunteerRoster() {
   configSheet.getRange(startRow, 10, newData.length, 5).setValues(newData);
   Logger.log(`Successfully provisioned ${count} volunteers.`);
 }
+
+/**
+ * 4. NUKE AND REBUILD DATABASE (THE DEFINITIVE FIX)
+ * CAUTION: This deletes ALL sheets and recreates them perfectly from scratch.
+ * Use this if you accidentally delete a column or break the structure.
+ */
+function NUKE_AND_REBUILD_DATABASE() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. Create a safe temporary sheet so we don't accidentally delete the very last sheet
+  const tempSheet = ss.insertSheet("TEMP_SAFE_" + Math.floor(Math.random() * 1000));
+  
+  // 2. Delete all existing sheets to wipe the slate completely clean
+  const sheets = ss.getSheets();
+  for (let i = 0; i < sheets.length; i++) {
+    if (sheets[i].getName() !== tempSheet.getName()) {
+      ss.deleteSheet(sheets[i]);
+    }
+  }
+  
+  // 3. Re-run the definitive setup scripts
+  setupWorkbook();
+  setupVolunteerRoster(); 
+  
+  // 4. Apply "Warning" Protection to Row 1 of all new sheets to prevent accidental deletion
+  const newSheets = ss.getSheets();
+  for (let i = 0; i < newSheets.length; i++) {
+    const sheet = newSheets[i];
+    if (sheet.getName() !== tempSheet.getName()) {
+      const protection = sheet.getRange("1:1").protect().setDescription("Definitive Headers");
+      // This doesn't lock you out, but it throws a big "Are you sure?" warning if you try to delete a column!
+      protection.setWarningOnly(true); 
+    }
+  }
+  
+  // 5. Cleanup
+  ss.deleteSheet(tempSheet);
+  Logger.log("DATABASE NUKED AND REBUILT PERFECTLY. Headers are now protected with warnings.");
+}
