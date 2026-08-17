@@ -51,7 +51,7 @@
         <div class="field-group">
           <label class="field-label" for="pin">PIN</label>
           <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*"
-                 maxlength="4" placeholder="••••" autocomplete="off" required>
+                 maxlength="6" placeholder="••••" autocomplete="off" required>
         </div>
 
         <button type="submit" id="loginBtn" class="btn-primary">Sign In & Scan</button>
@@ -64,14 +64,36 @@
     </div>
   </section>
 
-  <!-- CHECKPOINT SELECT VIEW -->
-  <section id="view-checkpoint" class="view hidden">
-    <div class="view-inner">
-      <h2 class="view-heading">Select Checkpoint</h2>
-      <p class="view-desc">Tap where you are scanning right now:</p>
-      <div id="checkpointList" class="checkpoint-list"></div>
-    </div>
-  </section>
+    <!-- VIEW: CHECKPOINT SELECT -->
+    <section id="view-checkpoint" class="view hidden">
+      <div class="view-header">
+        <h2 class="view-title">Select Checkpoint</h2>
+      </div>
+      <div class="card checkpoint-card">
+        <div id="checkpointList" class="checkpoint-list">
+          <!-- Checkpoint buttons injected here -->
+        </div>
+        <button id="adminDashboardBtn" class="btn-secondary hidden" style="margin-top: 1rem; width: 100%;">📊 Open Admin Dashboard</button>
+      </div>
+    </section>
+
+    <!-- VIEW: ADMIN DASHBOARD -->
+    <section id="view-dashboard" class="view hidden">
+      <div class="view-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="view-title">Live Dashboard</h2>
+        <button id="closeDashboardBtn" class="btn-secondary" style="padding: 0.5rem 1rem;">Close</button>
+      </div>
+      <div class="card" style="margin-bottom: 1rem;">
+        <div class="result-label">Total Expected Participants</div>
+        <div id="dashTotalExpected" class="result-value" style="font-size: 2rem;">--</div>
+      </div>
+      <div id="dashMetricsGrid" class="checkpoint-list">
+        <!-- Dashboard metrics injected here -->
+      </div>
+      <div style="text-align: center; margin-top: 1rem; font-size: 0.75rem; color: var(--text-tertiary);">
+        Auto-updating every 30s. Last update: <span id="dashLastUpdate">--</span>
+      </div>
+    </section>
 
   <!-- CLEAN SCANNER VIEW -->
   <section id="view-scanner" class="view hidden">

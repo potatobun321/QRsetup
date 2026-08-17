@@ -41,6 +41,8 @@ function doPost(e) {
       return jsonResponse(handleScan(body));
     } else if (action === "bulkSync") {
       return jsonResponse(handleBulkSync(body));
+    } else if (action === "getDashboardStats") {
+      return jsonResponse(handleDashboardStats(body));
     } else {
       return jsonResponse({ success: false, status: "ERROR", message: "Unknown action: " + action });
     }

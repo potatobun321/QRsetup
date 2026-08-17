@@ -131,6 +131,13 @@ const UI = (() => {
       torchToggleBtn: document.getElementById("torchToggleBtn"),
       torchLabel: document.getElementById("torchLabel"),
       manualEntryBtn: document.getElementById("manualEntryBtn"),
+      
+      viewDashboard: document.getElementById("view-dashboard"),
+      adminDashboardBtn: document.getElementById("adminDashboardBtn"),
+      closeDashboardBtn: document.getElementById("closeDashboardBtn"),
+      dashTotalExpected: document.getElementById("dashTotalExpected"),
+      dashMetricsGrid: document.getElementById("dashMetricsGrid"),
+      dashLastUpdate: document.getElementById("dashLastUpdate"),
 
       resultOverlay: document.getElementById("resultOverlay"),
       resultIcon: document.getElementById("resultIcon"),
@@ -150,7 +157,7 @@ const UI = (() => {
   }
 
   function showView(name) {
-    ["viewLogin", "viewCheckpoint", "viewScanner"].forEach((k) => {
+    ["viewLogin", "viewCheckpoint", "viewScanner", "viewDashboard"].forEach((k) => {
       if (els[k]) els[k].classList.add("hidden");
     });
     if (els[name]) els[name].classList.remove("hidden");
@@ -278,6 +285,10 @@ const UI = (() => {
       }
       els.checkpointList.appendChild(btn);
     });
+
+    if (els.adminDashboardBtn) {
+      els.adminDashboardBtn.classList.toggle("hidden", assigned !== "ALL");
+    }
   }
 
   function wireCheckpointSwitch() {
@@ -292,6 +303,53 @@ const UI = (() => {
         renderCheckpoints(session ? session.checkpoints : []);
         showView("viewCheckpoint");
       });
+    }
+  }
+
+  /* ---------------- Dashboard ---------------- */
+  let dashPollTimer = null;
+
+  function wireDashboard() {
+    if (!els.adminDashboardBtn) return;
+    
+    els.adminDashboardBtn.addEventListener("click", () => {
+      showView("viewDashboard");
+      refreshDashboard();
+      dashPollTimer = setInterval(refreshDashboard, 30000);
+    });
+
+    els.closeDashboardBtn.addEventListener("click", () => {
+      clearInterval(dashPollTimer);
+      showView("viewCheckpoint");
+    });
+  }
+
+  async function refreshDashboard() {
+    if (!navigator.onLine) return;
+    try {
+      const res = await Api.getDashboardStats();
+      if (res && res.success && res.data) {
+        const { totalExpected, checkpoints, timestamp } = res.data;
+        
+        els.dashTotalExpected.textContent = totalExpected || 0;
+        els.dashLastUpdate.textContent = formatTime(new Date(timestamp));
+        
+        els.dashMetricsGrid.innerHTML = "";
+        checkpoints.forEach(cp => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.style.marginBottom = "0.5rem";
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-weight: 500;">${cp.name}</div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-blue);">${cp.count}</div>
+            </div>
+          `;
+          els.dashMetricsGrid.appendChild(card);
+        });
+      }
+    } catch (e) {
+      console.warn("Dashboard sync failed", e);
     }
   }
 
@@ -687,6 +745,7 @@ const UI = (() => {
     cacheEls();
     wireLogin();
     wireCheckpointSwitch();
+    wireDashboard();
     wireTorch();
     wireManualEntry();
     wireResultDismiss();

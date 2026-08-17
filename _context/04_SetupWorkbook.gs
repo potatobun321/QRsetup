@@ -72,7 +72,7 @@ function setupWorkbook() {
   configSheet.getRange(`M2:M${MAX_ROWS}`).setDataValidation(booleanRule);
 
   if (String(configSheet.getRange("J2").getValue()).trim() === "") {
-    configSheet.getRange("J2:N2").setValues([["VOL-01", "John Doe", "1234", "TRUE", "ALL"]]);
+    configSheet.getRange("J2:N2").setValues([["ADM-01", "Event Executive", "123456", "TRUE", "ALL"]]);
   }
 
   const opSheet = ss.getSheetByName("02_Operational_State");

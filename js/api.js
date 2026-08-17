@@ -59,5 +59,16 @@ const Api = (() => {
     });
   }
 
-  return { login, scan, bulkSync };
+  function getDashboardStats() {
+    const session = Auth.getSession();
+    if (!session) return Promise.reject(new Error("No active session"));
+    return post({
+      action: "getDashboardStats",
+      volunteerId: session.volunteerId,
+      pin: session.pin,
+      deviceId: session.deviceId || Auth.getDeviceId()
+    });
+  }
+
+  return { login, scan, bulkSync, getDashboardStats };
 })();
