@@ -38,11 +38,11 @@ const Api = (() => {
   }
 
   function login(volunteerId, pin) {
-    return post({ action: "login", volunteerId, pin });
+    return post({ action: "login", volunteerId, pin, deviceId: Auth.getDeviceId() });
   }
 
   function scan(volunteerId, pin, payload) {
-    return post({ action: "scan", volunteerId, pin, payload });
+    return post({ action: "scan", volunteerId, pin, payload, deviceId: Auth.getDeviceId() });
   }
 
   function bulkSync(payloadArray) {
@@ -55,6 +55,7 @@ const Api = (() => {
       volunteerId: session.volunteerId,
       pin: session.pin,
       payload: payloadArray,
+      deviceId: session.deviceId || Auth.getDeviceId(),
     });
   }
 

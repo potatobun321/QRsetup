@@ -29,7 +29,7 @@ function authenticate(volId, pin) {
     const lastRow = configSheet.getLastRow();
     if (lastRow < 2) return { ok: false };
     
-    const configData = configSheet.getRange(2, 9, lastRow - 1, 4).getValues();
+    const configData = configSheet.getRange(2, 10, lastRow - 1, 5).getValues();
     volunteers = {};
     
     for (let i = 0; i < configData.length; i++) {
@@ -38,7 +38,8 @@ function authenticate(volId, pin) {
         volunteers[rowId] = {
           name: String(configData[i][1]).trim(),
           pin: String(configData[i][2]).trim(),
-          active: String(configData[i][3]).trim().toUpperCase() === "TRUE"
+          active: String(configData[i][3]).trim().toUpperCase() === "TRUE",
+          assignedCheckpoints: String(configData[i][4]).trim().toUpperCase()
         };
       }
     }
@@ -50,9 +51,15 @@ function authenticate(volId, pin) {
 
   const vol = volunteers[vId];
   if (vol && vol.pin === vPin && vol.active) {
-    return { ok: true, name: vol.name };
+    return { ok: true, name: vol.name, assignedCheckpoints: vol.assignedCheckpoints };
   }
   return { ok: false };
+}
+
+function flushAuthCache() {
+  const cache = CacheService.getScriptCache();
+  cache.remove("VOLUNTEERS_AUTH_MAP");
+  return "Cache Flushed";
 }
 
 function getCheckpoints() {
@@ -63,7 +70,7 @@ function getCheckpoints() {
   const lastRow = configSheet.getLastRow();
   if (lastRow < 2) return [];
   
-  const configData = configSheet.getRange(2, 4, lastRow - 1, 4).getValues();
+  const configData = configSheet.getRange(2, 4, lastRow - 1, 5).getValues();
   const checkpoints = [];
   
   for (let i = 0; i < configData.length; i++) {
@@ -73,7 +80,8 @@ function getCheckpoints() {
         id: id.toUpperCase(),
         name: String(configData[i][1]).trim(),
         duplicateAllowed: String(configData[i][2]).trim().toUpperCase() === "TRUE",
-        active: String(configData[i][3]).trim().toUpperCase() === "TRUE"
+        active: String(configData[i][3]).trim().toUpperCase() === "TRUE",
+        entitlementRule: String(configData[i][4]).trim().toUpperCase()
       });
     }
   }

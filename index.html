@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=1.1.4">
+<link rel="stylesheet" href="css/style.css?v=1.2.0">
 </head>
 <body>
 
@@ -45,13 +45,13 @@
         <div class="field-group">
           <label class="field-label" for="volunteerId">Volunteer ID</label>
           <input id="volunteerId" name="volunteerId" type="text" inputmode="text"
-                 placeholder="VOL-01" autocomplete="off" value="VOL-01" required>
+                 placeholder="VOL-01" autocomplete="off" required>
         </div>
 
         <div class="field-group">
           <label class="field-label" for="pin">PIN</label>
           <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*"
-                 maxlength="4" placeholder="••••" autocomplete="off" value="1234" required>
+                 maxlength="4" placeholder="••••" autocomplete="off" required>
         </div>
 
         <button type="submit" id="loginBtn" class="btn-primary">Sign In & Scan</button>
@@ -98,6 +98,14 @@
       <p id="resultId" class="result-id"></p>
       
       <div class="result-meta-grid">
+        <div class="meta-item" id="metaTypeGroup">
+          <span class="meta-label">Type</span>
+          <span id="resultType" class="meta-value"></span>
+        </div>
+        <div class="meta-item hidden" id="metaAccGroup">
+          <span class="meta-label">Room</span>
+          <span id="resultAcc" class="meta-value"></span>
+        </div>
         <div class="meta-item">
           <span class="meta-label">Checkpoint</span>
           <span id="resultCheckpoint" class="meta-value"></span>
@@ -128,17 +136,17 @@
 
 <!-- Scripts -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="js/config.js?v=1.1.4"></script>
-<script src="js/offlineQueue.js?v=1.1.4"></script>
-<script src="js/api.js?v=1.1.4"></script>
-<script src="js/auth.js?v=1.1.4"></script>
-<script src="js/scanner.js?v=1.1.4"></script>
-<script src="js/ui.js?v=1.1.4"></script>
+<script src="js/config.js?v=1.2.0"></script>
+<script src="js/offlineQueue.js?v=1.2.0"></script>
+<script src="js/api.js?v=1.2.0"></script>
+<script src="js/auth.js?v=1.2.0"></script>
+<script src="js/scanner.js?v=1.2.0"></script>
+<script src="js/ui.js?v=1.2.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     UI.init();
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js?v=1.1.4').catch(() => {});
+      navigator.serviceWorker.register('service-worker.js?v=1.2.0').catch(() => {});
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           navigator.serviceWorker.ready.then(r => r.update()).catch(() => {});

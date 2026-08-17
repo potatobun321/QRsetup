@@ -80,3 +80,38 @@ function factoryResetEMD() {
   
   Logger.log("Factory Reset Complete. All test data has been wiped.");
 }
+
+/**
+ * 3. AUTO-PROVISION VOLUNTEER ROSTER
+ * Generates unique VOL-XX IDs with secure random 4-digit PINs.
+ */
+function setupVolunteerRoster() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const configSheet = ss.getSheetByName("00_Configuration");
+  if (!configSheet) return;
+
+  const count = 50; // Total volunteers
+  const startRow = 2; // Assuming row 2 is the start of Volunteer config (Col J to N)
+  
+  const newData = [];
+  
+  for (let i = 1; i <= count; i++) {
+    const volId = "VOL-" + String(i).padStart(2, '0');
+    // Generate secure PIN (exclude simple ones like 1234, 0000, 1111)
+    let pin;
+    do {
+      pin = String(Math.floor(1000 + Math.random() * 9000));
+    } while (pin === "1234" || pin[0] === pin[1] && pin[1] === pin[2] && pin[2] === pin[3]);
+    
+    // Checkpoints: "ALL" for VOL-01 (Admin), others blank by default
+    const checkpoints = (i === 1) ? "ALL" : "";
+    newData.push([volId, `Volunteer ${i}`, pin, "TRUE", checkpoints]);
+  }
+  
+  // Clear old data (Col J to N)
+  configSheet.getRange(startRow, 10, Math.max(100, configSheet.getLastRow()), 5).clearContent();
+  
+  // Set new data
+  configSheet.getRange(startRow, 10, newData.length, 5).setValues(newData);
+  Logger.log(`Successfully provisioned ${count} volunteers.`);
+}

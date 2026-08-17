@@ -234,8 +234,16 @@ const UI = (() => {
   /* ---------------- Checkpoint Select ---------------- */
 
   function renderCheckpoints(checkpoints) {
+    const session = Auth.getSession();
+    const assigned = (session && session.assignedCheckpoints) ? session.assignedCheckpoints.toUpperCase() : "ALL";
+    
     els.checkpointList.innerHTML = "";
     (checkpoints || []).forEach((cp) => {
+      if (assigned !== "ALL") {
+        const allowedList = assigned.split(",").map(x => x.trim());
+        if (!allowedList.includes(cp.id)) return;
+      }
+      
       const btn = document.createElement("button");
       btn.className = "checkpoint-btn";
       const icon =
@@ -436,6 +444,8 @@ const UI = (() => {
           checkpoint: checkpointName,
           timeLabel: "Time",
           time: nowLabel,
+          type: p.type || "Participant",
+          acc: p.acc || ""
         });
         break;
       }
@@ -453,6 +463,8 @@ const UI = (() => {
           checkpoint: checkpointName,
           timeLabel: prev.timestamp ? "Previous scan" : "Status",
           time: prev.timestamp ? formatTime(new Date(prev.timestamp)) : "Duplicate Entry",
+          type: p.type || "",
+          acc: p.acc || ""
         });
         break;
       }
@@ -530,7 +542,7 @@ const UI = (() => {
     }
   }
 
-  function showResult({ overlayClass, icon, title, name, id, checkpoint, timeLabel, time }) {
+  function showResult({ overlayClass, icon, title, name, id, checkpoint, timeLabel, time, type, acc }) {
     els.resultOverlay.className = `result-overlay ${overlayClass}`;
     els.resultIcon.textContent = icon;
     els.resultTitle.textContent = title;
@@ -539,6 +551,30 @@ const UI = (() => {
     els.resultCheckpoint.textContent = checkpoint || "";
     els.resultTimeLabel.textContent = timeLabel || "Time";
     els.resultTime.textContent = time || "";
+    
+    const typeGroup = document.getElementById("metaTypeGroup");
+    const accGroup = document.getElementById("metaAccGroup");
+    const resultType = document.getElementById("resultType");
+    const resultAcc = document.getElementById("resultAcc");
+    
+    if (typeGroup && resultType) {
+      if (type) {
+        resultType.textContent = type;
+        typeGroup.classList.remove("hidden");
+      } else {
+        typeGroup.classList.add("hidden");
+      }
+    }
+    
+    if (accGroup && resultAcc) {
+      if (acc) {
+        resultAcc.textContent = acc;
+        accGroup.classList.remove("hidden");
+      } else {
+        accGroup.classList.add("hidden");
+      }
+    }
+
     els.resultOverlay.classList.remove("hidden");
 
     clearTimeout(dismissTimer);

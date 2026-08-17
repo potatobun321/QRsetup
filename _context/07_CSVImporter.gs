@@ -98,7 +98,11 @@ function importCSVData() {
       institution: ["institution", "college", "collegename", "university", "school", "organization", "company"],
       track: ["track", "eventtrack", "domain", "committee", "stream"],
       subtrack: ["subtrack", "sub_track", "subdomain", "category", "specialization", "portfolio"],
-      participanttype: ["participanttype", "participant_type", "type", "role", "designation", "tickettype"]
+      participanttype: ["participanttype", "participant_type", "type", "role", "designation", "tickettype"],
+      staystatus: ["staystatus", "stay_status", "resident", "residence", "stay", "accommodation"],
+      accommodationdetails: ["accommodationdetails", "accommodation_details", "room", "roomno", "roomnumber", "hostel", "block", "allotment"],
+      lunchpermitted: ["lunchpermitted", "lunch_permitted", "lunch", "lunchpass"],
+      dinnerpermitted: ["dinnerpermitted", "dinner_permitted", "dinner", "dinnerpass"]
     };
 
     let totalImportedAcrossFiles = 0;

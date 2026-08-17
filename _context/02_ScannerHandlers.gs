@@ -14,7 +14,14 @@ function getParticipantsMap() {
       const compactMap = JSON.parse(cachedJson);
       const map = {};
       for (const id in compactMap) {
-        map[id] = { name: compactMap[id][0], track: compactMap[id][1] };
+        map[id] = { 
+          name: compactMap[id][0], 
+          type: compactMap[id][1],
+          stay: compactMap[id][2],
+          acc: compactMap[id][3],
+          lunch: compactMap[id][4] === 1,
+          dinner: compactMap[id][5] === 1
+        };
       }
       return map;
     } catch (e) {}
@@ -27,14 +34,19 @@ function getParticipantsMap() {
   const compactMap = {}; // Compact tuple: [name, track]
   
   if (lastRow > 1) {
-    const data = masterSheet.getRange(2, 1, lastRow - 1, 6).getValues();
+    const data = masterSheet.getRange(2, 1, lastRow - 1, 12).getValues();
     for (let i = 0; i < data.length; i++) {
       const id = String(data[i][0]).trim().toUpperCase();
       if (id) {
         const name = String(data[i][1]).trim();
-        const track = String(data[i][5]).trim();
-        map[id] = { name, track };
-        compactMap[id] = [name, track];
+        const type = String(data[i][7]).trim();
+        const stay = String(data[i][8]).trim();
+        const acc = String(data[i][9]).trim();
+        const lunch = String(data[i][10]).trim().toUpperCase() === "TRUE" ? 1 : 0;
+        const dinner = String(data[i][11]).trim().toUpperCase() === "TRUE" ? 1 : 0;
+        
+        map[id] = { name, type, stay, acc, lunch: lunch === 1, dinner: dinner === 1 };
+        compactMap[id] = [name, type, stay, acc, lunch, dinner];
       }
     }
   }
@@ -80,7 +92,8 @@ function handleScan(body) {
     const logLastRow = logSheet ? logSheet.getLastRow() : 0;
     const logData = logLastRow > 1 ? logSheet.getRange(2, 1, logLastRow - 1, 7).getValues() : [];
     
-    const result = processSingleScanLogic(body.payload, body.volunteerId, logData);
+    const volunteerIdentifier = body.deviceId ? `${body.volunteerId} [${body.deviceId}]` : body.volunteerId;
+    const result = processSingleScanLogic(body.payload, volunteerIdentifier, logData);
     
     // SAFE: Only write if result.log is NOT null (prevents idempotency crash)
     if (result.log && logSheet) {
@@ -120,9 +133,10 @@ function handleBulkSync(body) {
     const results = [];
     const rowsToAppend = [];
     const timestamp = new Date();
+    const volunteerIdentifier = body.deviceId ? `${body.volunteerId} [${body.deviceId}]` : body.volunteerId;
     
     items.forEach(item => {
-      const result = processSingleScanLogic(item, body.volunteerId, logData);
+      const result = processSingleScanLogic(item, volunteerIdentifier, logData);
       results.push({ clientScanId: item.clientScanId, status: result.response.status });
       
       // SAFE: Only append if it's a new write (not an already-recorded replay)
@@ -210,7 +224,23 @@ function processSingleScanLogic(payload, volunteerId, logData) {
     return { response: { success: false, status: "INVALID_CHECKPOINT", message: "Checkpoint closed or invalid." }, log: logEntry };
   }
 
-  // 4. Duplicate Check (Strictly checks for previous SUCCESSFUL scans)
+  // 4. Validate Entitlement Rules
+  if (cp.entitlementRule) {
+    if (cp.entitlementRule === "LUNCH" && !participant.lunch) {
+      logEntry.status = "Denied"; logEntry.message = "Lunch Not Permitted";
+      return { response: { success: false, status: "ENTITLEMENT_DENIED", message: "Lunch Not Permitted.", participant }, log: logEntry };
+    }
+    if (cp.entitlementRule === "DINNER" && !participant.dinner) {
+      logEntry.status = "Denied"; logEntry.message = "Dinner Not Permitted";
+      return { response: { success: false, status: "ENTITLEMENT_DENIED", message: "Dinner Not Permitted.", participant }, log: logEntry };
+    }
+    if (cp.entitlementRule === "RESIDENT" && participant.stay.toUpperCase() !== "RESIDENT") {
+      logEntry.status = "Denied"; logEntry.message = "Not a Resident";
+      return { response: { success: false, status: "ENTITLEMENT_DENIED", message: "Not a Resident.", participant }, log: logEntry };
+    }
+  }
+
+  // 5. Duplicate Check (Strictly checks for previous SUCCESSFUL scans)
   if (!cp.duplicateAllowed) {
     for (let i = 0; i < logData.length; i++) {
       if (String(logData[i][1]).trim() === participantId && 
@@ -227,7 +257,7 @@ function processSingleScanLogic(payload, volunteerId, logData) {
     }
   }
 
-  // 5. Successful Scan
+  // 6. Successful Scan
   logEntry.status = "Success"; 
   logEntry.message = "Approved";
   return { 

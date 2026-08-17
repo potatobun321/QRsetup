@@ -8,10 +8,21 @@
  * ---------------------------------------------------------------
  */
 const Auth = (() => {
+  function getDeviceId() {
+    let devId = localStorage.getItem('JAI_DEVICE_ID');
+    if (!devId) {
+      devId = 'dev-' + Math.random().toString(36).substring(2, 10);
+      localStorage.setItem('JAI_DEVICE_ID', devId);
+    }
+    return devId;
+  }
+
   function getSession() {
     try {
       const raw = localStorage.getItem(Config.SESSION_KEY);
-      return raw ? JSON.parse(raw) : null;
+      const session = raw ? JSON.parse(raw) : null;
+      if (session) session.deviceId = getDeviceId();
+      return session;
     } catch (e) {
       return null;
     }
@@ -46,6 +57,7 @@ const Auth = (() => {
         pin: pin.trim(),
         volunteerName: response.volunteerName,
         checkpoints: response.checkpoints || [],
+        assignedCheckpoints: response.assignedCheckpoints || "ALL",
         selectedCheckpoint: null,
       });
     }
@@ -68,5 +80,6 @@ const Auth = (() => {
     login,
     logout,
     isLoggedIn,
+    getDeviceId
   };
 })();

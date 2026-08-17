@@ -12,14 +12,14 @@ function setupWorkbook() {
   
   const schemas = {
     "00_Configuration": [
-      ["Global_Variable", "Value", "", "Checkpoint_ID", "Checkpoint_Name", "Duplicate_Allowed", "Active", "", "Volunteer_ID", "Name", "PIN", "Active"],
-      ["Event_Prefix", "JAI", "", "ENT", "Main Entrance", "FALSE", "TRUE", "", "VOL-01", "John Doe", "1234", "TRUE"],
-      ["Event_Year", "26", "", "BAD", "Badge Collection", "FALSE", "TRUE", "", "", "", "", ""],
-      ["QR_Folder_ID", "[INSERT_ID]", "", "CAFD1", "Lunch Day 1", "FALSE", "TRUE", "", "", "", "", ""],
-      ["Cert_Folder_ID", "[INSERT_ID]", "", "COU", "Council Session", "TRUE", "TRUE", "", "", "", "", ""]
+      ["Global_Variable", "Value", "", "Checkpoint_ID", "Checkpoint_Name", "Duplicate_Allowed", "Active", "Entitlement_Rule", "", "Volunteer_ID", "Name", "PIN", "Active", "Assigned_Checkpoints"],
+      ["Event_Prefix", "JAI", "", "ENT", "Main Entrance", "FALSE", "TRUE", "", "", "VOL-01", "John Doe", "1234", "TRUE", "ALL"],
+      ["Event_Year", "26", "", "BAD", "Badge Collection", "FALSE", "TRUE", "", "", "", "", "", "", ""],
+      ["QR_Folder_ID", "[INSERT_ID]", "", "CAFD1", "Lunch Day 1", "FALSE", "TRUE", "LUNCH", "", "", "", "", "", ""],
+      ["Cert_Folder_ID", "[INSERT_ID]", "", "COU", "Council Session", "TRUE", "TRUE", "", "", "", "", "", "", ""]
     ],
     "01_Participants_Master": [
-      ["Participant_ID", "Full_Name", "Email_Address", "Phone_Number", "Institution", "Track", "Sub_Track", "Participant_Type"]
+      ["Participant_ID", "Full_Name", "Email_Address", "Phone_Number", "Institution", "Track", "Sub_Track", "Participant_Type", "Stay_Status", "Accommodation_Details", "Lunch_Permitted", "Dinner_Permitted"]
     ],
     "02_Operational_State": [
       ["Participant_ID", "Badge_Issued_At", "Last_Scan_At", "Last_Known_Location", "Meals_Claimed", "QR_Drive_URL", "QR_Email_Sent_At", "Email_Delivery_Status", "Email_Retry_Count", "Certificate_Drive_URL", "Certificate_Sent_At", "Admin_Remarks"]
@@ -61,10 +61,10 @@ function setupWorkbook() {
   const configSheet = ss.getSheetByName("00_Configuration");
   const booleanRule = SpreadsheetApp.newDataValidation().requireValueInList(["TRUE", "FALSE"], true).build();
   configSheet.getRange(`F2:G${MAX_ROWS}`).setDataValidation(booleanRule);
-  configSheet.getRange(`L2:L${MAX_ROWS}`).setDataValidation(booleanRule);
+  configSheet.getRange(`M2:M${MAX_ROWS}`).setDataValidation(booleanRule);
 
-  if (String(configSheet.getRange("I2").getValue()).trim() === "") {
-    configSheet.getRange("I2:L2").setValues([["VOL-01", "John Doe", "1234", "TRUE"]]);
+  if (String(configSheet.getRange("J2").getValue()).trim() === "") {
+    configSheet.getRange("J2:N2").setValues([["VOL-01", "John Doe", "1234", "TRUE", "ALL"]]);
   }
 
   const opSheet = ss.getSheetByName("02_Operational_State");
