@@ -9,7 +9,7 @@
 const Config = {
   // PASTE your deployed Google Apps Script Web App URL below.
   // It looks like: https://script.google.com/macros/s/AKfycb.../exec
-  API_URL: "https://script.google.com/macros/s/AKfycbyJHAdlC_tiuAlNLEN-c-epo3_S52GL66irYsui6A13jRWcy_J6xEQlbSmTyjCuK63R/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycby6LVIFF4rPwhAn6AhlziwqMHP22GMhaojb_NXhN3fPfv4rLcIfNXFXCb42AouWAMsX/exec",
 
   // Bump this string on every deploy that changes cached files.
   // The service worker uses it to know when to refresh its cache.
