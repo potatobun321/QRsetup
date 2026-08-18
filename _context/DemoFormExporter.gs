@@ -16,7 +16,7 @@
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("JAI Conclave")
-    .addItem("📤 Export Verified Batch to Drive", "exportVerifiedBatchToDrive")
+    .addItem("📤 Export Batch to Drive", "exportBatchToDrive")
     .addItem("⚙️ Set Drive Export Folder", "promptSetDriveFolder")
     .addSeparator()
     .addItem("🔄 Mark All as Ready for Export", "resetExportStatus")
@@ -98,7 +98,7 @@ function promptSetDriveFolder() {
  * Main export function: transforms Google Form columns into EMD 12-column format
  * and exports a timestamped CSV directly into your Google Drive import folder.
  */
-function exportVerifiedBatchToDrive() {
+function exportBatchToDrive() {
   const ui = SpreadsheetApp.getUi();
   let folderId = getExportFolderId();
 
@@ -152,7 +152,6 @@ function exportVerifiedBatchToDrive() {
   const colSubTrack = findCol(["venture", "subtrack", "sub_track", "founder", "startup"]);
   const colType = findCol(["participate", "participanttype", "role", "designation", "tickettype"]);
   const colStay = findCol(["mode", "stay", "residential", "accommodation", "hostel"]);
-  const colVerified = findCol(["paymentverified", "verified", "paymentstatus", "status"]);
   let colExported = findCol(["exportedtoemd", "exported", "syncstatus"]);
 
   // Auto-create Exported_To_EMD column if not present
@@ -187,18 +186,12 @@ function exportVerifiedBatchToDrive() {
     const isExported = colExported < row.length && String(row[colExported]).trim().toUpperCase() === "TRUE";
     if (isExported) continue;
 
-    // Check verification status
-    if (colVerified !== -1) {
-      const vStatus = String(row[colVerified]).trim().toUpperCase();
-      const isVerified = vStatus === "TRUE" || vStatus === "VERIFIED" || vStatus === "PAID" || vStatus === "YES";
-      if (!isVerified) continue;
-    }
-
     const fullName = colName !== -1 ? String(row[colName]).trim() : "";
     const email = colEmail !== -1 ? String(row[colEmail]).trim().toLowerCase() : "";
     let phone = colPhone !== -1 ? String(row[colPhone]).replace(/[^0-9+]/g, "").trim() : "";
     if (phone.startsWith("+91")) phone = phone.substring(3);
 
+    // Skip empty rows
     if (!fullName && !email) continue;
 
     const institution = colCollege !== -1 ? String(row[colCollege]).trim() : "";
