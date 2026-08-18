@@ -150,16 +150,31 @@ function importCSVData() {
         continue;
       }
 
-      // 5. Construct rows to append
+      // 5. Read existing participants to prevent duplicate imports (by Email or Phone)
+      const existingLastRow = masterSheet.getLastRow();
+      const existingEmails = new Set();
+      const existingPhones = new Set();
+
+      if (existingLastRow > 1) {
+        const existingData = masterSheet.getRange(2, 1, existingLastRow - 1, totalCols).getValues();
+        for (let e = 0; e < existingData.length; e++) {
+          const em = String(existingData[e][2] || "").trim().toLowerCase();
+          const ph = String(existingData[e][3] || "").replace(/[^0-9]/g, "").trim();
+          if (em) existingEmails.add(em);
+          if (ph && ph.length >= 10) existingPhones.add(ph);
+        }
+      }
+
+      // 6. Construct rows to append with de-duplication & smart fallbacks
       const rowsToAppend = [];
+      let skippedDuplicates = 0;
+
       for (let r = 0; r < dataRows.length; r++) {
         const rawRow = dataRows[r];
-        // Skip completely empty rows
         if (rawRow.every(cell => String(cell).trim() === "")) continue;
 
         const newRow = new Array(totalCols).fill("");
-        // Column 0 (Participant_ID) is deliberately left empty for sequential ID generator
-        newRow[0] = "";
+        newRow[0] = ""; // Participant_ID left empty for generator
 
         for (let m = 1; m < totalCols; m++) {
           const csvColIndex = colMap[m];
@@ -168,18 +183,47 @@ function importCSVData() {
           }
         }
 
-        // Only append if row contains at least some identifying data
+        const email = String(newRow[2] || "").trim().toLowerCase();
+        const phone = String(newRow[3] || "").replace(/[^0-9]/g, "").trim();
+
+        // Check for duplicates
+        if ((email && existingEmails.has(email)) || (phone && phone.length >= 10 && existingPhones.has(phone))) {
+          skippedDuplicates++;
+          continue;
+        }
+
+        // Smart defaults if columns were not explicitly present in raw CSV
+        // Stay_Status (Index 8)
+        if (!newRow[8]) {
+          const rawRowStr = rawRow.join(" ").toLowerCase();
+          newRow[8] = (rawRowStr.includes("resident") || rawRowStr.includes("hostel")) ? "RESIDENT" : "NON-RESIDENT";
+        }
+        // Accommodation_Details (Index 9)
+        if (!newRow[9]) {
+          newRow[9] = newRow[8] === "RESIDENT" ? "Pending Room Allotment" : "N/A";
+        }
+        // Lunch_Permitted (Index 10)
+        if (!newRow[10]) {
+          newRow[10] = "TRUE";
+        }
+        // Dinner_Permitted (Index 11)
+        if (!newRow[11]) {
+          newRow[11] = newRow[8] === "RESIDENT" ? "TRUE" : "FALSE";
+        }
+
         if (newRow[1] || newRow[2] || newRow[3]) {
           rowsToAppend.push(newRow);
+          if (email) existingEmails.add(email);
+          if (phone && phone.length >= 10) existingPhones.add(phone);
         }
       }
 
       if (rowsToAppend.length === 0) {
-        processReports.push(`${fileName}: 0 valid records found`);
+        processReports.push(`${fileName}: 0 new records (Skipped ${skippedDuplicates} duplicate(s))`);
         continue;
       }
 
-      // 6. Safe Batch Append to 01_Participants_Master
+      // 7. Safe Batch Append to 01_Participants_Master
       const startRow = masterSheet.getLastRow() + 1;
       masterSheet.getRange(startRow, 1, rowsToAppend.length, totalCols).setValues(rowsToAppend);
       totalImportedAcrossFiles += rowsToAppend.length;
