@@ -105,7 +105,11 @@ function mapIDCardsAndRunQA() {
   if (orphanedCards.length > 0) report += `\nSample Orphaned Cards: ${orphanedCards.slice(0, 5).join(", ")}`;
   
   logAutomation("QA & Mapping", mappedCount, (missingCards.length > 0 || missingEmails.length > 0) ? "Partial Success" : "Success", report);
-  SpreadsheetApp.getUi().alert("QA & Mapping Complete", report, SpreadsheetApp.getUi().ButtonSet.OK);
+  try {
+    SpreadsheetApp.getUi().alert("QA & Mapping Complete", report, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    Logger.log(report);
+  }
 }
 
 

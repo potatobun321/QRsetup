@@ -98,6 +98,7 @@ function handleLogin(body) {
     success: true,
     status: "SUCCESS",
     volunteerName: auth.name,
+    assignedCheckpoints: auth.assignedCheckpoints,
     checkpoints: allowedCheckpoints
   };
 }
