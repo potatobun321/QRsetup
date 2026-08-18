@@ -3,28 +3,95 @@
  * -------------------------------------------------------------
  * Standalone Google Form Response Sheet Exporter for JAI Conclave 2026.
  * 
- * INSTRUCTIONS:
- * 1. Open your Demo Google Form Responses Spreadsheet.
- * 2. Click Extensions > Apps Script.
- * 3. Delete any default code, paste this entire file, and click Save.
- * 4. Paste your Google Drive Import Folder ID in DRIVE_EXPORT_FOLDER_ID below.
- * 5. Refresh your Google Sheet — a "JAI Conclave" menu will appear!
+ * FEATURES:
+ * - Zero code editing required: set Drive Folder via the "⚙️ Set Drive Export Folder" menu popup!
+ * - Also supports a dedicated "_Config" or "Settings" tab if preferred.
+ * - Accepts either raw Folder IDs or full Google Drive folder URLs.
  * -------------------------------------------------------------
  */
 
-// PASTE your Google Drive Import Folder ID below:
-// (Same as CSV_Import_Folder_ID from 00_Configuration in EMD)
-const DRIVE_EXPORT_FOLDER_ID = "[INSERT_YOUR_DRIVE_FOLDER_ID_HERE]";
-
 /**
- * Automatically adds a custom menu to the Google Form Responses sheet.
+ * Automatically creates the custom menu when the Google Sheet opens.
  */
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("JAI Conclave")
     .addItem("📤 Export Verified Batch to Drive", "exportVerifiedBatchToDrive")
+    .addItem("⚙️ Set Drive Export Folder", "promptSetDriveFolder")
+    .addSeparator()
     .addItem("🔄 Mark All as Ready for Export", "resetExportStatus")
     .addToUi();
+}
+
+/**
+ * Helper to get or prompt for the Google Drive Export Folder ID.
+ */
+function getExportFolderId() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. Check if a '_Config' or 'Settings' sheet has cell B1/B2 set
+  const configSheets = ["_Config", "Settings", "Config", "Configuration"];
+  for (const name of configSheets) {
+    const s = ss.getSheetByName(name);
+    if (s) {
+      const data = s.getRange("A1:B10").getValues();
+      for (let i = 0; i < data.length; i++) {
+        const key = String(data[i][0] || "").toLowerCase();
+        if (key.includes("folder") || key.includes("drive") || key.includes("export")) {
+          const val = String(data[i][1] || "").trim();
+          if (val && !val.includes("INSERT")) return extractFolderId(val);
+        }
+      }
+    }
+  }
+
+  // 2. Check Document Properties (saved via menu)
+  const props = PropertiesService.getDocumentProperties();
+  const savedId = props.getProperty("DRIVE_EXPORT_FOLDER_ID");
+  if (savedId) return savedId;
+
+  return "";
+}
+
+/**
+ * Cleanly extracts a Google Drive Folder ID from a URL or raw ID string.
+ */
+function extractFolderId(input) {
+  const str = String(input || "").trim();
+  const match = str.match(/folders\/([-\w]{25,})/i) || str.match(/[-\w]{25,}/);
+  return match ? match[1] || match[0] : str;
+}
+
+/**
+ * UI Popup allowing user to paste their Google Drive folder URL or ID without opening Apps Script!
+ */
+function promptSetDriveFolder() {
+  const ui = SpreadsheetApp.getUi();
+  const currentId = getExportFolderId();
+  
+  const response = ui.prompt(
+    "⚙️ Configure Google Drive Export Folder",
+    `Paste your Google Drive Folder URL or Folder ID below:\n` +
+    (currentId ? `(Current Folder ID: ${currentId})\n` : ""),
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() === ui.Button.OK) {
+    const input = response.getResponseText().trim();
+    if (!input) {
+      ui.alert("No Input", "Folder setting was not changed.", ui.ButtonSet.OK);
+      return;
+    }
+
+    const folderId = extractFolderId(input);
+    try {
+      const folder = DriveApp.getFolderById(folderId);
+      PropertiesService.getDocumentProperties().setProperty("DRIVE_EXPORT_FOLDER_ID", folderId);
+      ui.alert("Success! 🎉", `Linked successfully to Drive folder:\n📁 "${folder.getName()}"`, ui.ButtonSet.OK);
+    } catch (e) {
+      ui.alert("Folder Error ❌", "Cannot access that Google Drive folder. Please ensure the link/ID is correct and you have edit permissions.", ui.ButtonSet.OK);
+    }
+  }
 }
 
 /**
@@ -33,17 +100,20 @@ function onOpen() {
  */
 function exportVerifiedBatchToDrive() {
   const ui = SpreadsheetApp.getUi();
-  
-  if (!DRIVE_EXPORT_FOLDER_ID || DRIVE_EXPORT_FOLDER_ID.includes("INSERT_YOUR")) {
-    ui.alert("Configuration Missing", "Please open Apps Script and set your DRIVE_EXPORT_FOLDER_ID at the top of the file.", ui.ButtonSet.OK);
-    return;
+  let folderId = getExportFolderId();
+
+  // If not configured, prompt the user right now!
+  if (!folderId) {
+    promptSetDriveFolder();
+    folderId = getExportFolderId();
+    if (!folderId) return;
   }
 
   let folder;
   try {
-    folder = DriveApp.getFolderById(DRIVE_EXPORT_FOLDER_ID.trim());
+    folder = DriveApp.getFolderById(folderId);
   } catch (e) {
-    ui.alert("Folder Error", "Cannot access Google Drive folder. Please check your DRIVE_EXPORT_FOLDER_ID.", ui.ButtonSet.OK);
+    ui.alert("Folder Error", "Cannot access the configured Google Drive folder. Please click 'JAI Conclave > ⚙️ Set Drive Export Folder' to update it.", ui.ButtonSet.OK);
     return;
   }
 
@@ -60,10 +130,10 @@ function exportVerifiedBatchToDrive() {
   const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
   const data = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
 
-  // Helper normalizer: strips symbols and lowercases
+  // Helper normalizer
   const norm = (str) => String(str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
-  // Dynamic Column Resolver (finds columns regardless of order in Form)
+  // Dynamic Column Resolver
   const findCol = (aliases) => {
     for (let c = 0; c < headers.length; c++) {
       const h = norm(headers[c]);
@@ -85,13 +155,12 @@ function exportVerifiedBatchToDrive() {
   const colVerified = findCol(["paymentverified", "verified", "paymentstatus", "status"]);
   let colExported = findCol(["exportedtoemd", "exported", "syncstatus"]);
 
-  // If Exported_To_EMD column doesn't exist, create it in the last column + 1
+  // Auto-create Exported_To_EMD column if not present
   if (colExported === -1) {
     colExported = lastCol;
     sheet.getRange(1, colExported + 1).setValue("Exported_To_EMD").setFontWeight("bold");
   }
 
-  // EMD Target 12 Headers
   const emdHeaders = [
     "Participant_ID",
     "Full_Name",
@@ -118,20 +187,18 @@ function exportVerifiedBatchToDrive() {
     const isExported = colExported < row.length && String(row[colExported]).trim().toUpperCase() === "TRUE";
     if (isExported) continue;
 
-    // Check verification status (if verification column exists)
+    // Check verification status
     if (colVerified !== -1) {
       const vStatus = String(row[colVerified]).trim().toUpperCase();
       const isVerified = vStatus === "TRUE" || vStatus === "VERIFIED" || vStatus === "PAID" || vStatus === "YES";
-      if (!isVerified) continue; // Skip unverified rows
+      if (!isVerified) continue;
     }
 
-    // Extract & Transform fields
     const fullName = colName !== -1 ? String(row[colName]).trim() : "";
     const email = colEmail !== -1 ? String(row[colEmail]).trim().toLowerCase() : "";
     let phone = colPhone !== -1 ? String(row[colPhone]).replace(/[^0-9+]/g, "").trim() : "";
     if (phone.startsWith("+91")) phone = phone.substring(3);
 
-    // Skip blank rows
     if (!fullName && !email) continue;
 
     const institution = colCollege !== -1 ? String(row[colCollege]).trim() : "";
@@ -139,7 +206,6 @@ function exportVerifiedBatchToDrive() {
     const subTrack = colSubTrack !== -1 ? String(row[colSubTrack]).trim() : "";
     const pType = colType !== -1 && String(row[colType]).trim() ? String(row[colType]).trim() : "Delegate";
 
-    // Smart Stay & Meal Entitlement Derivation
     const rawStay = colStay !== -1 ? String(row[colStay]).toLowerCase() : "";
     const isResident = rawStay.includes("resident") || rawStay.includes("hostel") || rawStay.includes("stay") || rawStay.includes("yes");
     const stayStatus = isResident ? "RESIDENT" : "NON-RESIDENT";
@@ -148,7 +214,7 @@ function exportVerifiedBatchToDrive() {
     const dinnerPermitted = isResident ? "TRUE" : "FALSE";
 
     exportRows.push([
-      "", // Participant_ID is left blank for EMD sequential generator
+      "",
       fullName,
       email,
       phone,
@@ -172,7 +238,7 @@ function exportVerifiedBatchToDrive() {
     return;
   }
 
-  // Convert array to CSV string with standard quoting
+  // Convert array to CSV string
   const csvContent = exportRows.map(row => {
     return row.map(cell => {
       const cellStr = String(cell || "");

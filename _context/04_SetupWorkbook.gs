@@ -16,7 +16,9 @@ function setupWorkbook() {
       ["Event_Prefix", "JAI", "", "ENT", "Main Entrance", "FALSE", "TRUE", "", "", "ADM-01", "Event Executive", "123456", "TRUE", "ALL", "", "", "TRUE"],
       ["Event_Year", "26", "", "BAD", "Badge Collection", "FALSE", "TRUE", "", "", "", "", "", "", "", "", "", ""],
       ["QR_Folder_ID", "[INSERT_ID]", "", "CAFD1", "Lunch Day 1", "FALSE", "TRUE", "LUNCH", "", "", "", "", "", "", "", "", ""],
-      ["ID_Card_Folder_ID", "[INSERT_ID]", "", "COU", "Council Session", "TRUE", "TRUE", "", "", "", "", "", "", "", "", "", ""]
+      ["ID_Card_Folder_ID", "[INSERT_ID]", "", "COU", "Council Session", "TRUE", "TRUE", "", "", "", "", "", "", "", "", "", ""],
+      ["CSV_Import_Folder_ID", "[INSERT_ID]", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["CSV_Archive_Folder_ID", "[INSERT_ID]", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
     ],
     "01_Participants_Master": [
       ["Participant_ID", "Full_Name", "Email_Address", "Phone_Number", "Institution", "Track", "Sub_Track", "Participant_Type", "Stay_Status", "Accommodation_Details", "Lunch_Permitted", "Dinner_Permitted"]

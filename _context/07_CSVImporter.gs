@@ -30,11 +30,17 @@ function importCSVData() {
     let importFolderId = "";
     let archiveFolderId = "";
 
+    const extractFolderId = (input) => {
+      const str = String(input || "").trim();
+      const match = str.match(/folders\/([-\w]{25,})/i) || str.match(/[-\w]{25,}/);
+      return match ? match[1] || match[0] : str;
+    };
+
     for (let i = 0; i < configData.length; i++) {
       const key = String(configData[i][0]).trim();
       const val = String(configData[i][1]).trim();
-      if (key === "CSV_Import_Folder_ID") importFolderId = val;
-      if (key === "CSV_Archive_Folder_ID") archiveFolderId = val;
+      if (key === "CSV_Import_Folder_ID") importFolderId = extractFolderId(val);
+      if (key === "CSV_Archive_Folder_ID") archiveFolderId = extractFolderId(val);
     }
 
     if (!importFolderId || importFolderId === "[INSERT_ID]") {
