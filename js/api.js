@@ -70,5 +70,29 @@ const Api = (() => {
     });
   }
 
-  return { login, scan, bulkSync, getDashboardStats };
+  function getVolunteerDevices() {
+    const session = Auth.getSession();
+    if (!session) return Promise.reject(new Error("No active session"));
+    return post({
+      action: "getVolunteerDevices",
+      volunteerId: session.volunteerId,
+      pin: session.pin,
+      deviceId: session.deviceId || Auth.getDeviceId()
+    });
+  }
+
+  function unlockVolunteerDevice(targetVolunteerId, unlockAction = "allowBackup") {
+    const session = Auth.getSession();
+    if (!session) return Promise.reject(new Error("No active session"));
+    return post({
+      action: "unlockVolunteerDevice",
+      volunteerId: session.volunteerId,
+      pin: session.pin,
+      targetVolunteerId: targetVolunteerId,
+      unlockAction: unlockAction,
+      deviceId: session.deviceId || Auth.getDeviceId()
+    });
+  }
+
+  return { login, scan, bulkSync, getDashboardStats, getVolunteerDevices, unlockVolunteerDevice };
 })();

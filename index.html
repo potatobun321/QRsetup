@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?v=1.3.1">
+<link rel="stylesheet" href="css/style.css?v=1.4.0">
 </head>
 <body>
 
@@ -79,19 +79,40 @@
 
     <!-- VIEW: ADMIN DASHBOARD -->
     <section id="view-dashboard" class="view hidden">
-      <div class="view-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 class="view-title">Live Dashboard</h2>
-        <button id="closeDashboardBtn" class="btn-secondary" style="padding: 0.5rem 1rem;">Close</button>
+      <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h2 class="view-title" style="font-size: 1.25rem; font-weight: 700;">Admin Control Center</h2>
+        <button id="closeDashboardBtn" class="chip-btn" style="padding: 6px 14px; font-size: 12px;">Close</button>
       </div>
-      <div class="card" style="margin-bottom: 1rem;">
-        <div class="result-label">Total Expected Participants</div>
-        <div id="dashTotalExpected" class="result-value" style="font-size: 2rem;">--</div>
+
+      <!-- Dashboard Tabs -->
+      <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+        <button id="tabDashStatsBtn" class="btn-primary" style="flex: 1; padding: 8px; font-size: 13px; font-weight: 600;">📊 Live Stats</button>
+        <button id="tabDashDevicesBtn" class="btn-secondary" style="flex: 1; padding: 8px; font-size: 13px; font-weight: 600;">📱 Device Manager</button>
       </div>
-      <div id="dashMetricsGrid" class="checkpoint-list">
-        <!-- Dashboard metrics injected here -->
+
+      <!-- Stats Panel -->
+      <div id="dashStatsPanel">
+        <div class="card" style="margin-bottom: 12px; background: var(--surface); padding: 14px; border-radius: var(--radius); border: 1px solid var(--border);">
+          <div style="font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Total Expected Participants</div>
+          <div id="dashTotalExpected" style="font-size: 2rem; font-weight: 800; color: var(--accent); margin-top: 4px;">--</div>
+        </div>
+        <div id="dashMetricsGrid" class="checkpoint-list">
+          <!-- Dynamic Checkpoint metric cards -->
+        </div>
+        <div style="text-align: center; margin-top: 14px; font-size: 11.5px; color: var(--text-dim);">
+          Auto-updating every 30s. Last update: <span id="dashLastUpdate">--</span>
+        </div>
       </div>
-      <div style="text-align: center; margin-top: 1rem; font-size: 0.75rem; color: var(--text-tertiary);">
-        Auto-updating every 30s. Last update: <span id="dashLastUpdate">--</span>
+
+      <!-- Device Manager Panel -->
+      <div id="dashDevicePanel" class="hidden">
+        <div style="margin-bottom: 10px;">
+          <input id="deviceSearchInput" type="text" placeholder="Search volunteer ID or name..." 
+                 style="width: 100%; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 13px;">
+        </div>
+        <div id="volunteerDeviceList" style="display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto;">
+          <!-- Injected via UI.renderVolunteerDevices() -->
+        </div>
       </div>
     </section>
 
@@ -158,17 +179,17 @@
 
 <!-- Scripts -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="js/config.js?v=1.3.1"></script>
-<script src="js/offlineQueue.js?v=1.3.1"></script>
-<script src="js/api.js?v=1.3.1"></script>
-<script src="js/auth.js?v=1.3.1"></script>
-<script src="js/scanner.js?v=1.3.1"></script>
-<script src="js/ui.js?v=1.3.1"></script>
+<script src="js/config.js?v=1.4.0"></script>
+<script src="js/offlineQueue.js?v=1.4.0"></script>
+<script src="js/api.js?v=1.4.0"></script>
+<script src="js/auth.js?v=1.4.0"></script>
+<script src="js/scanner.js?v=1.4.0"></script>
+<script src="js/ui.js?v=1.4.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     UI.init();
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js?v=1.3.1').catch(() => {});
+      navigator.serviceWorker.register('service-worker.js?v=1.4.0').catch(() => {});
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           navigator.serviceWorker.ready.then(r => r.update()).catch(() => {});

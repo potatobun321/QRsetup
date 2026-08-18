@@ -80,9 +80,13 @@ function getCheckpointsMap() {
 // --- SCAN HANDLERS ---
 
 function handleLogin(body) {
-  const auth = authenticate(body.volunteerId, body.pin);
+  const auth = authenticate(body.volunteerId, body.pin, body.deviceId);
   if (!auth.ok) {
-    return { success: false, status: "AUTH_FAILED", message: "Invalid ID or PIN." };
+    return { 
+      success: false, 
+      status: auth.status || "AUTH_FAILED", 
+      message: auth.message || "Invalid ID or PIN." 
+    };
   }
   
   const allCheckpoints = getCheckpoints(); 
@@ -104,8 +108,8 @@ function handleLogin(body) {
 }
 
 function handleScan(body) {
-  const auth = authenticate(body.volunteerId, body.pin);
-  if (!auth.ok) return { success: false, status: "AUTH_FAILED", message: "Invalid Volunteer ID or PIN." };
+  const auth = authenticate(body.volunteerId, body.pin, body.deviceId);
+  if (!auth.ok) return { success: false, status: auth.status || "AUTH_FAILED", message: auth.message || "Invalid Volunteer ID or PIN." };
   
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) return { success: false, status: "TIMEOUT", message: "Server busy, please retry." };
@@ -139,8 +143,8 @@ function handleScan(body) {
 }
 
 function handleBulkSync(body) {
-  const auth = authenticate(body.volunteerId, body.pin);
-  if (!auth.ok) return { success: false, status: "AUTH_FAILED", message: "Invalid Volunteer ID or PIN." };
+  const auth = authenticate(body.volunteerId, body.pin, body.deviceId);
+  if (!auth.ok) return { success: false, status: auth.status || "AUTH_FAILED", message: auth.message || "Invalid Volunteer ID or PIN." };
   
   const items = Array.isArray(body.payload) ? body.payload : [];
   if (items.length === 0) return { success: true, status: "SYNC_COMPLETE", results: [] };

@@ -78,3 +78,75 @@ function handleDashboardStats(body) {
   
   return { success: true, data: responseData };
 }
+
+function handleVolunteerDeviceList(body) {
+  const auth = authenticate(body.volunteerId, body.pin, body.deviceId);
+  if (!auth.ok || auth.assignedCheckpoints !== "ALL") {
+    return { success: false, status: "AUTH_FAILED", message: "Admin privileges required." };
+  }
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const configSheet = ss.getSheetByName("00_Configuration");
+  if (!configSheet) return { success: false, message: "Missing 00_Configuration." };
+  
+  const lastRow = configSheet.getLastRow();
+  if (lastRow < 2) return { success: true, volunteers: [] };
+  
+  const data = configSheet.getRange(2, 10, lastRow - 1, 8).getValues();
+  const list = [];
+  
+  for (let i = 0; i < data.length; i++) {
+    const id = String(data[i][0]).trim().toUpperCase();
+    if (id && !id.startsWith("ADM")) {
+      list.push({
+        id: id,
+        name: String(data[i][1]).trim(),
+        active: String(data[i][3]).trim().toUpperCase() === "TRUE",
+        assignedCheckpoints: String(data[i][4]).trim(),
+        slot1: String(data[i][5]).trim() ? "Bound" : "Empty",
+        slot2: String(data[i][6]).trim() ? "Bound" : "Empty",
+        allowBackup: String(data[i][7]).trim().toUpperCase() === "TRUE"
+      });
+    }
+  }
+  
+  return { success: true, volunteers: list };
+}
+
+function handleUnlockVolunteerDevice(body) {
+  const auth = authenticate(body.volunteerId, body.pin, body.deviceId);
+  if (!auth.ok || auth.assignedCheckpoints !== "ALL") {
+    return { success: false, status: "AUTH_FAILED", message: "Admin privileges required." };
+  }
+  
+  const targetId = String(body.targetVolunteerId || "").trim().toUpperCase();
+  const actionType = String(body.unlockAction || "allowBackup").trim();
+  
+  if (!targetId) return { success: false, message: "Missing targetVolunteerId" };
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const configSheet = ss.getSheetByName("00_Configuration");
+  if (!configSheet) return { success: false, message: "Missing 00_Configuration." };
+  
+  const lastRow = configSheet.getLastRow();
+  const data = configSheet.getRange(2, 10, lastRow - 1, 8).getValues();
+  
+  for (let i = 0; i < data.length; i++) {
+    const rowId = String(data[i][0]).trim().toUpperCase();
+    if (rowId === targetId) {
+      const rowIndex = i + 2;
+      
+      if (actionType === "allowBackup") {
+        configSheet.getRange(rowIndex, 17).setValue("TRUE");
+      } else if (actionType === "resetSlots") {
+        configSheet.getRange(rowIndex, 15, 1, 2).clearContent();
+        configSheet.getRange(rowIndex, 17).setValue("FALSE");
+      }
+      
+      flushAuthCache();
+      return { success: true, message: `Updated device authorization for ${targetId}` };
+    }
+  }
+  
+  return { success: false, message: `Volunteer ${targetId} not found.` };
+}

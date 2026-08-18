@@ -12,11 +12,11 @@ function setupWorkbook() {
   
   const schemas = {
     "00_Configuration": [
-      ["Global_Variable", "Value", "", "Checkpoint_ID", "Checkpoint_Name", "Duplicate_Allowed", "Active", "Entitlement_Rule", "", "Volunteer_ID", "Name", "PIN", "Active", "Assigned_Checkpoints"],
-      ["Event_Prefix", "JAI", "", "ENT", "Main Entrance", "FALSE", "TRUE", "", "", "ADM-01", "Event Executive", "123456", "TRUE", "ALL"],
-      ["Event_Year", "26", "", "BAD", "Badge Collection", "FALSE", "TRUE", "", "", "", "", "", "", ""],
-      ["QR_Folder_ID", "[INSERT_ID]", "", "CAFD1", "Lunch Day 1", "FALSE", "TRUE", "LUNCH", "", "", "", "", "", ""],
-      ["ID_Card_Folder_ID", "[INSERT_ID]", "", "COU", "Council Session", "TRUE", "TRUE", "", "", "", "", "", "", ""]
+      ["Global_Variable", "Value", "", "Checkpoint_ID", "Checkpoint_Name", "Duplicate_Allowed", "Active", "Entitlement_Rule", "", "Volunteer_ID", "Name", "PIN", "Active", "Assigned_Checkpoints", "Device_Slot_1", "Device_Slot_2", "Allow_Backup_Slot"],
+      ["Event_Prefix", "JAI", "", "ENT", "Main Entrance", "FALSE", "TRUE", "", "", "ADM-01", "Event Executive", "123456", "TRUE", "ALL", "", "", "TRUE"],
+      ["Event_Year", "26", "", "BAD", "Badge Collection", "FALSE", "TRUE", "", "", "", "", "", "", "", "", "", ""],
+      ["QR_Folder_ID", "[INSERT_ID]", "", "CAFD1", "Lunch Day 1", "FALSE", "TRUE", "LUNCH", "", "", "", "", "", "", "", "", ""],
+      ["ID_Card_Folder_ID", "[INSERT_ID]", "", "COU", "Council Session", "TRUE", "TRUE", "", "", "", "", "", "", "", "", "", ""]
     ],
     "01_Participants_Master": [
       ["Participant_ID", "Full_Name", "Email_Address", "Phone_Number", "Institution", "Track", "Sub_Track", "Participant_Type", "Stay_Status", "Accommodation_Details", "Lunch_Permitted", "Dinner_Permitted"]
@@ -70,9 +70,10 @@ function setupWorkbook() {
   // Fix for the old column L (which used to be Active, but is now PIN)
   configSheet.getRange(`L2:L${MAX_ROWS}`).clearDataValidations();
   configSheet.getRange(`M2:M${MAX_ROWS}`).setDataValidation(booleanRule);
+  configSheet.getRange(`Q2:Q${MAX_ROWS}`).setDataValidation(booleanRule);
 
   if (String(configSheet.getRange("J2").getValue()).trim() === "") {
-    configSheet.getRange("J2:N2").setValues([["ADM-01", "Event Executive", "123456", "TRUE", "ALL"]]);
+    configSheet.getRange("J2:Q2").setValues([["ADM-01", "Event Executive", "123456", "TRUE", "ALL", "", "", "TRUE"]]);
   }
 
   const opSheet = ss.getSheetByName("02_Operational_State");

@@ -103,14 +103,14 @@ function setupVolunteerRoster() {
       pin = String(Math.floor(1000 + Math.random() * 9000));
     } while (pin === "1234" || pin[0] === pin[1] && pin[1] === pin[2] && pin[2] === pin[3]);
     
-    newData.push([volId, `Volunteer ${i}`, pin, "TRUE", ""]);
+    newData.push([volId, `Volunteer ${i}`, pin, "TRUE", "", "", "", "FALSE"]);
   }
   
-  // Clear old data (Col J to N) starting from row 3
-  configSheet.getRange(startRow, 10, Math.max(100, configSheet.getLastRow()), 5).clearContent();
+  // Clear old data (Col J to Q) starting from row 3
+  configSheet.getRange(startRow, 10, Math.max(100, configSheet.getLastRow()), 8).clearContent();
   
   // Set new data
-  configSheet.getRange(startRow, 10, newData.length, 5).setValues(newData);
+  configSheet.getRange(startRow, 10, newData.length, 8).setValues(newData);
   Logger.log(`Successfully provisioned ${count} volunteers.`);
 }
 

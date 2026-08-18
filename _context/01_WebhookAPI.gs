@@ -27,12 +27,16 @@ function doPost(e) {
     const body = JSON.parse(e.postData.contents);
     const action = body.action;
     
-    // Login does not write to the sheet — no write lock needed.
+    // Read-only actions do not require write lock
     if (action === "login") {
       return jsonResponse(handleLogin(body));
+    } else if (action === "getDashboardStats") {
+      return jsonResponse(handleDashboardStats(body));
+    } else if (action === "getVolunteerDevices") {
+      return jsonResponse(handleVolunteerDeviceList(body));
     }
     
-    // Acquire write lock for scan and bulkSync (10s max wait)
+    // Acquire write lock for scan, bulkSync, and unlock actions (10s max wait)
     if (!lock.tryLock(10000)) {
       return jsonResponse({ success: false, status: "TIMEOUT", message: "Server busy, please retry." });
     }
@@ -41,8 +45,8 @@ function doPost(e) {
       return jsonResponse(handleScan(body));
     } else if (action === "bulkSync") {
       return jsonResponse(handleBulkSync(body));
-    } else if (action === "getDashboardStats") {
-      return jsonResponse(handleDashboardStats(body));
+    } else if (action === "unlockVolunteerDevice") {
+      return jsonResponse(handleUnlockVolunteerDevice(body));
     } else {
       return jsonResponse({ success: false, status: "ERROR", message: "Unknown action: " + action });
     }

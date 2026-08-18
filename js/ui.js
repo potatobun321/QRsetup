@@ -135,9 +135,15 @@ const UI = (() => {
       viewDashboard: document.getElementById("view-dashboard"),
       adminDashboardBtn: document.getElementById("adminDashboardBtn"),
       closeDashboardBtn: document.getElementById("closeDashboardBtn"),
+      tabDashStatsBtn: document.getElementById("tabDashStatsBtn"),
+      tabDashDevicesBtn: document.getElementById("tabDashDevicesBtn"),
+      dashStatsPanel: document.getElementById("dashStatsPanel"),
+      dashDevicePanel: document.getElementById("dashDevicePanel"),
       dashTotalExpected: document.getElementById("dashTotalExpected"),
       dashMetricsGrid: document.getElementById("dashMetricsGrid"),
       dashLastUpdate: document.getElementById("dashLastUpdate"),
+      deviceSearchInput: document.getElementById("deviceSearchInput"),
+      volunteerDeviceList: document.getElementById("volunteerDeviceList"),
 
       resultOverlay: document.getElementById("resultOverlay"),
       resultIcon: document.getElementById("resultIcon"),
@@ -308,12 +314,14 @@ const UI = (() => {
 
   /* ---------------- Dashboard ---------------- */
   let dashPollTimer = null;
+  let cachedVolunteersList = [];
 
   function wireDashboard() {
     if (!els.adminDashboardBtn) return;
     
     els.adminDashboardBtn.addEventListener("click", () => {
       showView("viewDashboard");
+      switchDashTab("stats");
       refreshDashboard();
       dashPollTimer = setInterval(refreshDashboard, 30000);
     });
@@ -322,6 +330,43 @@ const UI = (() => {
       clearInterval(dashPollTimer);
       showView("viewCheckpoint");
     });
+
+    if (els.tabDashStatsBtn && els.tabDashDevicesBtn) {
+      els.tabDashStatsBtn.addEventListener("click", () => switchDashTab("stats"));
+      els.tabDashDevicesBtn.addEventListener("click", () => {
+        switchDashTab("devices");
+        refreshVolunteerDevices();
+      });
+    }
+
+    if (els.deviceSearchInput) {
+      els.deviceSearchInput.addEventListener("input", (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        renderVolunteerDevices(query);
+      });
+    }
+  }
+
+  function switchDashTab(tabName) {
+    if (tabName === "stats") {
+      if (els.dashStatsPanel) els.dashStatsPanel.classList.remove("hidden");
+      if (els.dashDevicePanel) els.dashDevicePanel.classList.add("hidden");
+      if (els.tabDashStatsBtn) {
+        els.tabDashStatsBtn.className = "btn-primary";
+      }
+      if (els.tabDashDevicesBtn) {
+        els.tabDashDevicesBtn.className = "btn-secondary";
+      }
+    } else {
+      if (els.dashStatsPanel) els.dashStatsPanel.classList.add("hidden");
+      if (els.dashDevicePanel) els.dashDevicePanel.classList.remove("hidden");
+      if (els.tabDashStatsBtn) {
+        els.tabDashStatsBtn.className = "btn-secondary";
+      }
+      if (els.tabDashDevicesBtn) {
+        els.tabDashDevicesBtn.className = "btn-primary";
+      }
+    }
   }
 
   async function refreshDashboard() {
@@ -339,10 +384,14 @@ const UI = (() => {
           const card = document.createElement("div");
           card.className = "card";
           card.style.marginBottom = "0.5rem";
+          card.style.background = "var(--surface)";
+          card.style.border = "1px solid var(--border)";
+          card.style.borderRadius = "var(--radius-sm)";
+          card.style.padding = "12px 16px";
           card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="font-weight: 500;">${cp.name}</div>
-              <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-blue);">${cp.count}</div>
+              <div style="font-weight: 600; font-size: 14px;">${cp.name}</div>
+              <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent);">${cp.count}</div>
             </div>
           `;
           els.dashMetricsGrid.appendChild(card);
@@ -351,6 +400,125 @@ const UI = (() => {
     } catch (e) {
       console.warn("Dashboard sync failed", e);
     }
+  }
+
+  async function refreshVolunteerDevices() {
+    if (!navigator.onLine) return;
+    if (els.volunteerDeviceList) {
+      els.volunteerDeviceList.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-dim);">Loading volunteer devices...</div>`;
+    }
+    try {
+      const res = await Api.getVolunteerDevices();
+      if (res && res.success && res.volunteers) {
+        cachedVolunteersList = res.volunteers;
+        const query = els.deviceSearchInput ? els.deviceSearchInput.value.trim().toLowerCase() : "";
+        renderVolunteerDevices(query);
+      }
+    } catch (e) {
+      if (els.volunteerDeviceList) {
+        els.volunteerDeviceList.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--red);">Failed to load devices. Please try again.</div>`;
+      }
+    }
+  }
+
+  function renderVolunteerDevices(query = "") {
+    if (!els.volunteerDeviceList) return;
+    els.volunteerDeviceList.innerHTML = "";
+
+    const filtered = cachedVolunteersList.filter(v => {
+      return v.id.toLowerCase().includes(query) || v.name.toLowerCase().includes(query);
+    });
+
+    if (filtered.length === 0) {
+      els.volunteerDeviceList.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-dim);">No matching volunteers found.</div>`;
+      return;
+    }
+
+    filtered.forEach(vol => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.background = "var(--surface)";
+      card.style.border = "1px solid var(--border)";
+      card.style.borderRadius = "var(--radius-sm)";
+      card.style.padding = "12px 14px";
+      card.style.display = "flex";
+      card.style.flexDirection = "column";
+      card.style.gap = "8px";
+
+      const slot1Color = vol.slot1 === "Bound" ? "var(--accent)" : "var(--text-dim)";
+      const slot2Color = vol.slot2 === "Bound" ? "var(--accent)" : (vol.allowBackup ? "var(--amber)" : "var(--text-dim)");
+      const backupStatusText = vol.allowBackup ? "Backup Slot: Unlocked" : "Backup Slot: Locked";
+
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-weight: 700; font-size: 13.5px; color: var(--text);">${vol.id}</span>
+            <span style="font-size: 12px; color: var(--text-dim); margin-left: 6px;">${vol.name}</span>
+          </div>
+          <span style="font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: ${vol.active ? 'rgba(67, 199, 142, 0.15)' : 'rgba(224, 90, 78, 0.15)'}; color: ${vol.active ? 'var(--accent)' : 'var(--red)'};">
+            ${vol.active ? 'ACTIVE' : 'DISABLED'}
+          </span>
+        </div>
+
+        <div style="display: flex; gap: 12px; font-size: 11.5px; color: var(--text-dim);">
+          <div>Primary: <strong style="color: ${slot1Color}">${vol.slot1}</strong></div>
+          <div>Backup: <strong style="color: ${slot2Color}">${vol.slot2}</strong> (${backupStatusText})</div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 4px;">
+          <button class="chip-btn btn-unlock-backup" data-id="${vol.id}" style="flex: 1; padding: 6px; font-size: 11px; background: rgba(226, 184, 87, 0.12); border-color: rgba(226, 184, 87, 0.3); color: var(--amber);">
+            ${vol.allowBackup ? '✓ Backup Active' : '🔓 Allow Backup'}
+          </button>
+          <button class="chip-btn btn-reset-slots" data-id="${vol.id}" style="padding: 6px 10px; font-size: 11px; background: rgba(224, 90, 78, 0.12); border-color: rgba(224, 90, 78, 0.3); color: var(--red);">
+            🔄 Reset Device
+          </button>
+        </div>
+      `;
+
+      const unlockBtn = card.querySelector(".btn-unlock-backup");
+      const resetBtn = card.querySelector(".btn-reset-slots");
+
+      unlockBtn.addEventListener("click", async () => {
+        unlockBtn.disabled = true;
+        unlockBtn.textContent = "Unlocking...";
+        try {
+          const res = await Api.unlockVolunteerDevice(vol.id, "allowBackup");
+          if (res && res.success) {
+            vol.allowBackup = true;
+            renderVolunteerDevices(query);
+          } else {
+            alert((res && res.message) || "Failed to authorize backup phone.");
+            renderVolunteerDevices(query);
+          }
+        } catch (e) {
+          alert("Network error updating device authorization.");
+          renderVolunteerDevices(query);
+        }
+      });
+
+      resetBtn.addEventListener("click", async () => {
+        if (!confirm(`Reset all bound devices for ${vol.id} (${vol.name})? The next phone that signs in will become the new primary device.`)) return;
+        resetBtn.disabled = true;
+        resetBtn.textContent = "Resetting...";
+        try {
+          const res = await Api.unlockVolunteerDevice(vol.id, "resetSlots");
+          if (res && res.success) {
+            vol.slot1 = "Empty";
+            vol.slot2 = "Empty";
+            vol.allowBackup = false;
+            renderVolunteerDevices(query);
+          } else {
+            alert((res && res.message) || "Failed to reset devices.");
+            renderVolunteerDevices(query);
+          }
+        } catch (e) {
+          alert("Network error resetting devices.");
+          renderVolunteerDevices(query);
+        }
+      });
+
+      els.volunteerDeviceList.appendChild(card);
+    });
   }
 
   /* ---------------- Scanner View & Torch ---------------- */
