@@ -248,7 +248,9 @@ const UI = (() => {
 
   function renderCheckpoints(checkpoints) {
     const session = Auth.getSession();
-    const assigned = (session && session.assignedCheckpoints) ? session.assignedCheckpoints.toUpperCase() : "ALL";
+    const isAdmin = (session && session.isAdmin) || (session && session.volunteerId && session.volunteerId.toUpperCase().startsWith("ADM"));
+    const rawAssigned = (session && session.assignedCheckpoints) ? session.assignedCheckpoints.toUpperCase().trim() : "";
+    const assigned = (isAdmin || rawAssigned === "ALL" || rawAssigned === "") ? "ALL" : rawAssigned;
     
     els.checkpointList.innerHTML = "";
     (checkpoints || []).forEach((cp) => {
@@ -293,7 +295,8 @@ const UI = (() => {
     });
 
     if (els.adminDashboardBtn) {
-      els.adminDashboardBtn.classList.toggle("hidden", assigned !== "ALL");
+      // ONLY true Admins (ADM-XX) get the admin dashboard button!
+      els.adminDashboardBtn.classList.toggle("hidden", !isAdmin);
     }
   }
 

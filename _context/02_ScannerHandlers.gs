@@ -91,9 +91,11 @@ function handleLogin(body) {
   
   const allCheckpoints = getCheckpoints(); 
   const allowedCheckpoints = [];
+  const assigned = String(auth.assignedCheckpoints || "").trim().toUpperCase();
+  const isAdmin = String(body.volunteerId || "").trim().toUpperCase().startsWith("ADM");
   
   allCheckpoints.forEach(cp => {
-    if (auth.assignedCheckpoints === "ALL" || auth.assignedCheckpoints.includes(cp.id)) {
+    if (isAdmin || assigned === "ALL" || assigned === "" || assigned.includes(cp.id)) {
       allowedCheckpoints.push(cp);
     }
   });
@@ -102,6 +104,7 @@ function handleLogin(body) {
     success: true,
     status: "SUCCESS",
     volunteerName: auth.name,
+    isAdmin: isAdmin,
     assignedCheckpoints: auth.assignedCheckpoints,
     checkpoints: allowedCheckpoints
   };

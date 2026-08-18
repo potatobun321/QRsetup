@@ -52,12 +52,14 @@ const Auth = (() => {
   async function login(volunteerId, pin) {
     const response = await Api.login(volunteerId.trim(), pin.trim());
     if (response && response.success) {
+      const isAdm = volunteerId.trim().toUpperCase().startsWith("ADM") || !!response.isAdmin;
       saveSession({
         volunteerId: volunteerId.trim(),
         pin: pin.trim(),
         volunteerName: response.volunteerName,
         checkpoints: response.checkpoints || [],
-        assignedCheckpoints: response.assignedCheckpoints || "ALL",
+        assignedCheckpoints: response.assignedCheckpoints || "",
+        isAdmin: isAdm,
         selectedCheckpoint: null,
       });
     }

@@ -13,7 +13,7 @@ const Config = {
 
   // Bump this string on every deploy that changes cached files.
   // The service worker uses it to know when to refresh its cache.
-  APP_VERSION: "v1.4.0",
+  APP_VERSION: "v1.4.1",
 
   // Fast auto-dismiss (1.2s) for high-throughput scanning queues.
   // Volunteers can also tap anywhere on the overlay to scan instantly.
