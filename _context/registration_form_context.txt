@@ -1,0 +1,13 @@
+Timestamp	Full Name	Gender	Age	Email Address	Contact Number	College / University	Current College Year / Class	City & State	How would you like to participate?	Do you have any prior Model United Nations (MUN) experience?	Select your preferred Council.	What is your preferred mode of participation? 	Name of the venture.	Name of the founder(s)/team.	Please scan the QR code given below or pay on 8290919112 and upload the receipt of the payment.	Confirmation	"How did you hear about JAI Conclave?
+(If referred by someone, specify name.)"	"Upload your ID.
+(School ID/College ID/Aadhar card) "	Email address	"After completing the payment:
+Open the successful transaction in your UPI app.
+
+1) Open the transaction details. 
+2) Locate the UTR / UPI Transaction ID / Transaction   Reference Number. 
+3) Enter the UTR in the field below. 
+
+Take a screenshot of the transaction details and upload it below.
+
+The screenshot MUST show: Payment status: Successful / Completed Amount paid: ₹2,000/- UTR / UPI Transaction ID Date and time of payment Recipient / Payee details, wherever displayed
+"	Provide a concise overview of your venture.  	UPI Transaction ID	Column 18	Column 17						
