@@ -41,30 +41,22 @@ const Scanner = (() => {
     const container = document.getElementById(READER_ELEMENT_ID);
     if (container) container.innerHTML = "";
 
-    html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, {
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true // Native C++ GPU hardware decoder
-      },
-      verbose: false
-    });
+    html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, /* verbose= */ false);
 
     const config = {
-      fps: 20, // 20 FPS sampling for rapid capture
+      fps: 15,
+      qrbox: (viewfinderWidth, viewfinderHeight) => {
+        const minDim = Math.min(viewfinderWidth || 280, viewfinderHeight || 280);
+        const size = Math.floor(minDim * 0.85); // 85% wide scanning area
+        return { width: size, height: size };
+      },
       aspectRatio: 1.0,
-      disableFlip: true
-    };
-
-    const cameraConstraints = {
-      facingMode: "environment",
-      focusMode: "continuous",
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
     };
 
     try {
-      // Tier 1: Try rear camera with continuous focus and HD resolution
+      // Tier 1: Rear environment camera
       await html5QrCode.start(
-        cameraConstraints,
+        { facingMode: "environment" },
         config,
         (decodedText) => handleDecode(decodedText),
         () => {}
@@ -73,11 +65,11 @@ const Scanner = (() => {
       isPaused = false;
       isTorchOn = false;
     } catch (err) {
-      console.warn("High-res rear camera failed, trying fallback camera:", err);
-      // Tier 2: Try default fallback camera
+      console.warn("Back camera failed, trying user camera:", err);
+      // Tier 2: Front / user camera
       try {
         await html5QrCode.start(
-          { facingMode: "environment" },
+          { facingMode: "user" },
           config,
           (decodedText) => handleDecode(decodedText),
           () => {}
@@ -86,10 +78,11 @@ const Scanner = (() => {
         isPaused = false;
         isTorchOn = false;
       } catch (fallbackErr) {
+        console.warn("User camera failed, trying generic device camera:", fallbackErr);
         try {
-          // Tier 3: Any available user camera
+          // Tier 3: Generic default camera constraint
           await html5QrCode.start(
-            { facingMode: "user" },
+            {},
             config,
             (decodedText) => handleDecode(decodedText),
             () => {}
