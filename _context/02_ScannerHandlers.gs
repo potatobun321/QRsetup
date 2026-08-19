@@ -7,31 +7,52 @@
 
 function getParticipantsMap() {
   const cache = CacheService.getScriptCache();
-  const cachedJson = cache.get("COMPACT_PARTICIPANTS_MAP");
   
+  // 1. Try reading single key or chunked keys from Cache
+  const cachedJson = cache.get("COMPACT_PARTICIPANTS_MAP");
+  let compactMap = null;
+
   if (cachedJson) {
     try {
-      const compactMap = JSON.parse(cachedJson);
-      const map = {};
-      for (const id in compactMap) {
-        map[id] = { 
-          name: compactMap[id][0], 
-          type: compactMap[id][1],
-          stay: compactMap[id][2],
-          acc: compactMap[id][3],
-          lunch: compactMap[id][4] === 1,
-          dinner: compactMap[id][5] === 1
-        };
-      }
-      return map;
+      compactMap = JSON.parse(cachedJson);
     } catch (e) {}
+  } else {
+    const chunkCount = parseInt(cache.get("COMPACT_MAP_CHUNKS") || "0");
+    if (chunkCount > 0) {
+      try {
+        const keys = [];
+        for (let k = 0; k < chunkCount; k++) keys.push("COMPACT_MAP_" + k);
+        const chunks = cache.getAll(keys);
+        let fullStr = "";
+        for (let k = 0; k < chunkCount; k++) {
+          fullStr += (chunks["COMPACT_MAP_" + k] || "");
+        }
+        if (fullStr) compactMap = JSON.parse(fullStr);
+      } catch (e) {}
+    }
   }
 
+  if (compactMap) {
+    const map = {};
+    for (const id in compactMap) {
+      map[id] = { 
+        name: compactMap[id][0], 
+        type: compactMap[id][1],
+        stay: compactMap[id][2],
+        acc: compactMap[id][3],
+        lunch: compactMap[id][4] === 1,
+        dinner: compactMap[id][5] === 1
+      };
+    }
+    return map;
+  }
+
+  // 2. Read from Master Sheet
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const masterSheet = ss.getSheetByName("01_Participants_Master");
   const lastRow = masterSheet ? masterSheet.getLastRow() : 0;
   const map = {};
-  const compactMap = {}; // Compact tuple: [name, track]
+  compactMap = {};
   
   if (lastRow > 1) {
     const data = masterSheet.getRange(2, 1, lastRow - 1, 12).getValues();
@@ -51,12 +72,26 @@ function getParticipantsMap() {
     }
   }
   
-  // Cache for 20 minutes (1200 seconds) - Compact payload fits well under 100KB
+  // 3. Safe Chunked Caching (Scales up to 10,000+ attendees without hitting 100KB limit)
   try {
-    cache.put("COMPACT_PARTICIPANTS_MAP", JSON.stringify(compactMap), 1200);
+    const fullJson = JSON.stringify(compactMap);
+    const CHUNK_SIZE = 90000; // 90KB safe chunk
+    if (fullJson.length <= CHUNK_SIZE) {
+      cache.put("COMPACT_PARTICIPANTS_MAP", fullJson, 1200);
+      cache.remove("COMPACT_MAP_CHUNKS");
+    } else {
+      const numChunks = Math.ceil(fullJson.length / CHUNK_SIZE);
+      const chunkMap = { "COMPACT_MAP_CHUNKS": String(numChunks) };
+      for (let c = 0; c < numChunks; c++) {
+        chunkMap["COMPACT_MAP_" + c] = fullJson.substr(c * CHUNK_SIZE, CHUNK_SIZE);
+      }
+      cache.putAll(chunkMap, 1200);
+      cache.remove("COMPACT_PARTICIPANTS_MAP");
+    }
   } catch (e) {
     Logger.log("Cache payload warning: " + e.toString());
   }
+
   return map;
 }
 

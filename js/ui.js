@@ -591,18 +591,19 @@ const UI = (() => {
     const session = Auth.getSession();
     if (!session || !session.selectedCheckpoint) return;
 
-    const participantId = String(rawParticipantId || "").trim().toUpperCase();
+    const rawStr = String(rawParticipantId || "").trim();
+    const match = rawStr.match(JAI_QR_REGEX);
     const checkpointName = session.selectedCheckpoint.name;
 
     // 1. FAST CLIENT-SIDE REGEX PRE-VALIDATION (0ms Server Load)
-    if (!JAI_QR_REGEX.test(participantId)) {
+    if (!match) {
       SoundFX.playError();
       Haptics.error();
       showResult({
         overlayClass: "error",
         icon: "✕",
         title: "Invalid QR Code",
-        name: participantId || "Unknown Code",
+        name: rawStr || "Unknown Code",
         id: "Expected format: JAI-26-XXXXXX",
         checkpoint: checkpointName,
         timeLabel: "Status",
@@ -610,6 +611,8 @@ const UI = (() => {
       });
       return;
     }
+
+    const participantId = match[0].toUpperCase();
 
     const payload = {
       participantId,
