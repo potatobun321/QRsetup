@@ -41,22 +41,30 @@ const Scanner = (() => {
     const container = document.getElementById(READER_ELEMENT_ID);
     if (container) container.innerHTML = "";
 
-    html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, /* verbose= */ false);
+    html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, {
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true // Native C++ GPU hardware decoder
+      },
+      verbose: false
+    });
 
     const config = {
-      fps: 15,
-      qrbox: (viewfinderWidth, viewfinderHeight) => {
-        const minDim = Math.min(viewfinderWidth || 280, viewfinderHeight || 280);
-        const size = Math.floor(minDim * 0.75);
-        return { width: size, height: size };
-      },
+      fps: 20, // 20 FPS sampling for rapid capture
       aspectRatio: 1.0,
+      disableFlip: true
+    };
+
+    const cameraConstraints = {
+      facingMode: "environment",
+      focusMode: "continuous",
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
     };
 
     try {
-      // Tier 1: Try rear camera (facingMode: environment)
+      // Tier 1: Try rear camera with continuous focus and HD resolution
       await html5QrCode.start(
-        { facingMode: "environment" },
+        cameraConstraints,
         config,
         (decodedText) => handleDecode(decodedText),
         () => {}
@@ -65,11 +73,11 @@ const Scanner = (() => {
       isPaused = false;
       isTorchOn = false;
     } catch (err) {
-      console.warn("Back camera failed, trying fallback camera:", err);
-      // Tier 2: Try default/user camera
+      console.warn("High-res rear camera failed, trying fallback camera:", err);
+      // Tier 2: Try default fallback camera
       try {
         await html5QrCode.start(
-          { facingMode: "user" },
+          { facingMode: "environment" },
           config,
           (decodedText) => handleDecode(decodedText),
           () => {}
@@ -78,8 +86,21 @@ const Scanner = (() => {
         isPaused = false;
         isTorchOn = false;
       } catch (fallbackErr) {
-        isRunning = false;
-        throw fallbackErr;
+        try {
+          // Tier 3: Any available user camera
+          await html5QrCode.start(
+            { facingMode: "user" },
+            config,
+            (decodedText) => handleDecode(decodedText),
+            () => {}
+          );
+          isRunning = true;
+          isPaused = false;
+          isTorchOn = false;
+        } catch (finalErr) {
+          isRunning = false;
+          throw finalErr;
+        }
       }
     }
   }
